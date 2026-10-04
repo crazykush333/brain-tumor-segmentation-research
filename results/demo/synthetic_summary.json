@@ -1,0 +1,114 @@
+{
+  "bootstrap_replicates": 500,
+  "code_sha256": "1d0b377d213c417b79d9c1871cb7ccf5bf32c4ebc2da45a365051357fdf8c8b4",
+  "data": "deterministic synthetic toy volumes (SYNTH_* cases); no BraTS, UPenn or BraTS-Africa data",
+  "demo": true,
+  "demo_seed": 20261004,
+  "disclaimer": "Synthetic demonstration only \u2014 not a BraTS scientific result.",
+  "example_delta_aurc_by_condition": {
+    "-FLAIR": -0.201208,
+    "-T1": -0.198649,
+    "-T1c": -0.179913,
+    "-T2": -0.203602
+  },
+  "example_failure_counts": {
+    "-FLAIR": {
+      "confident_failure": 0,
+      "false_negative_TC": 0,
+      "false_negative_WT": 0,
+      "false_positive_TC": 0,
+      "false_positive_WT": 0,
+      "hallucinated_ET": 4,
+      "missed_ET": 0
+    },
+    "-T1": {
+      "confident_failure": 0,
+      "false_negative_TC": 0,
+      "false_negative_WT": 0,
+      "false_positive_TC": 0,
+      "false_positive_WT": 0,
+      "hallucinated_ET": 4,
+      "missed_ET": 0
+    },
+    "-T1c": {
+      "confident_failure": 0,
+      "false_negative_TC": 0,
+      "false_negative_WT": 0,
+      "false_positive_TC": 0,
+      "false_positive_WT": 0,
+      "hallucinated_ET": 4,
+      "missed_ET": 0
+    },
+    "-T2": {
+      "confident_failure": 0,
+      "false_negative_TC": 0,
+      "false_negative_WT": 0,
+      "false_positive_TC": 0,
+      "false_positive_WT": 0,
+      "hallucinated_ET": 4,
+      "missed_ET": 0
+    },
+    "Full": {
+      "confident_failure": 0,
+      "false_negative_TC": 0,
+      "false_negative_WT": 0,
+      "false_positive_TC": 0,
+      "false_positive_WT": 0,
+      "hallucinated_ET": 4,
+      "missed_ET": 0
+    }
+  },
+  "example_mean_ece_et": {
+    "-FLAIR": 0.197454,
+    "-T1": 0.196961,
+    "-T1c": 0.217963,
+    "-T2": 0.196411,
+    "Full": 0.175638
+  },
+  "example_primary_statistic": {
+    "ci_high": -0.133359,
+    "ci_low": -0.253285,
+    "estimate": -0.195843,
+    "name": "mean over C4 of ET Delta-AURC (U1 vs I), synthetic test set, arm B",
+    "note": "Synthetic demonstration only \u2014 not a BraTS scientific result."
+  },
+  "example_tau_q": {
+    "0.20": 0.698891,
+    "0.70": 0.364971,
+    "0.80": 0.348446,
+    "0.90": 0.157675
+  },
+  "example_threshold_transfer_q080": {
+    "delta_coverage": -0.161458,
+    "delta_risk": 0.054245,
+    "target_coverage": 0.640625,
+    "validation_coverage": 0.802083
+  },
+  "files": [
+    "README.md",
+    "synthetic_summary.json",
+    "synthetic_metrics.csv",
+    "synthetic_failure_analysis.csv",
+    "synthetic_results_report.md",
+    "synthetic_risk_coverage.svg",
+    "synthetic_calibration.svg",
+    "synthetic_uncertainty_vs_error.svg",
+    "synthetic_failure_analysis.svg"
+  ],
+  "generated_at": "2026-10-04T19:31:27+00:00",
+  "git_commit": "6a7e0af6ef0e98c17d3d100c0f4a7c80097158f3",
+  "label": "SYNTHETIC DEMO \u2014 NOT REAL RESULTS",
+  "scientific_result": false,
+  "synthetic": true,
+  "synthetic_study": {
+    "conditions": [
+      "Full",
+      "-T1",
+      "-T1c",
+      "-T2",
+      "-FLAIR"
+    ],
+    "test_cases": 32,
+    "validation_cases": 24
+  }
+}

@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it as below. No scientific results or
+  paper exist yet; this entry cites the research software and frozen protocol only.
+type: software
+title: "brats-uncertainty: reproducibility infrastructure for a pre-registered study of case-level reliability of glioma segmentation under missing MRI sequences"
+version: 0.1.0
+date-released: "2026-09-29"
+license: Apache-2.0
+repository-code: "https://github.com/crazykush333/brain-tumor-segmentation-research"
+authors:
+  - family-names: Kushwaha
+    given-names: Ayush
+keywords:
+  - brain tumour segmentation
+  - missing MRI sequences
+  - uncertainty
+  - selective prediction
+  - pre-registration
+  - nnU-Net
+  - BraTS
+abstract: >-
+  Software and reproducibility infrastructure for a pre-registered empirical
+  evaluation (protocol v1.0, frozen 2026-09-28, git tag protocol-v1.0) of whether
+  ensemble-disagreement confidence ranks case-level enhancing-tumour segmentation
+  failures within fixed, simulated single-missing-sequence conditions. Experimental
+  execution is pending; no results are included.

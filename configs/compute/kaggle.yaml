@@ -1,0 +1,12 @@
+# Kaggle compute profile. ESTIMATES until EXP-001 (protocol §17). Not authorized (SR7: data route pending B1).
+platform: kaggle
+gpu_options: ["P100", "T4", "2xT4"]
+planning_assumptions:           # to be replaced by EXP-001 measurements; not facts
+  weekly_quota_gpu_h: 30
+  session_limit_h: 12
+project_cap_gpu_h: 220
+secrets:
+  # Credentials are Kaggle notebook secrets. Never committed, never NEXT_PUBLIC_*, never in configs.
+  kaggle_json: "not stored in repository"
+data_storage: "B1 owner-approved route (v1.0-A1) + administrative entry 2026-10-01: direct official TCIA download into ephemeral private session storage only; no Kaggle Dataset, mirror or upload (private re-hosting still needs TCIA confirmation). See configs/compute/remote_compute.yaml"
+clone: "notebooks clone a tagged commit (protocol §24)"

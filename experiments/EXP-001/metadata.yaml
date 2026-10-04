@@ -1,0 +1,14 @@
+experiment_id: EXP-001
+title: Compute pilot (timing, memory, resume and quota measurements only)
+status: PLANNED
+protocol_version: v1.0
+protocol_sections: ["§17.2", "SR1", "SR6", "SR7", "SR8", "gates D1-D6"]
+required_gates: [B1, B2, D1, D2, D3, D4, D5]
+authorization: null
+provenance: null
+outputs: {}
+history: []
+notes: >-
+  Specification: docs/experiments/EXP-001_COMPUTE_PILOT_SPEC.md. Not authorized; not run.
+  Produces no scientific findings. Reviewers recorded for the §6.2 procedure (not EXP-001):
+  primary Ayush Kushwaha; second Dr. Sreenivasa Chakravarthi.

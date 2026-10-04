@@ -1,0 +1,220 @@
+{
+  "amendments": [
+    {
+      "date": "2026-10-01",
+      "file": "docs/research/protocol-amendments/2026-10-01_B1_data-route.md",
+      "id": "v1.0-A1",
+      "title": "Protocol v1.0 amendment A1: B1 operational data route",
+      "type": "DATA-ROUTE / OPERATIONAL"
+    }
+  ],
+  "frozen_on": "2026-09-28",
+  "git_tag": "protocol-v1.0",
+  "parameters": {
+    "cohorts": {
+      "brats2021_training_total": 1251,
+      "brats_africa_max_eligible": 95,
+      "development_count_before_grouping": 740,
+      "hoi_count": 511,
+      "hoi_site_id": "1"
+    },
+    "compute": {
+      "cap_gpu_hours": 220
+    },
+    "conditions": {
+      "C15_scope": {
+        "arm": "B",
+        "sets": [
+          "internal_test"
+        ]
+      },
+      "C4": [
+        "-T1",
+        "-T1c",
+        "-T2",
+        "-FLAIR"
+      ],
+      "C5": [
+        "Full",
+        "-T1",
+        "-T1c",
+        "-T2",
+        "-FLAIR"
+      ],
+      "control": "Full"
+    },
+    "grouping": {
+      "linked_decisions": [
+        "SAME_PATIENT",
+        "UNRESOLVED"
+      ],
+      "primary_reviewer": "Ayush Kushwaha",
+      "second_reviewer": "Dr. Sreenivasa Chakravarthi",
+      "t_screen_rule": "minimum WT-label Dice among the two verified positive-control pairs",
+      "t_screen_value": null,
+      "verified_groups": {
+        "A": [
+          "BraTS2021_00626",
+          "BraTS2021_00758"
+        ],
+        "B": [
+          "BraTS2021_00639",
+          "BraTS2021_00557"
+        ]
+      }
+    },
+    "metrics": {
+      "dice_empty_convention": {
+        "both_empty": 1.0,
+        "one_empty": 0.0
+      },
+      "ece": {
+        "binning": "equal-width",
+        "bins": 15,
+        "roi_dilation_voxels": 3
+      },
+      "risk": "1 - ET Dice",
+      "volume_failure": {
+        "min_gt_et_ml": 1.0,
+        "relative_error_threshold": 0.4,
+        "sensitivity_threshold": 0.65
+      }
+    },
+    "modalities": {
+      "channel_order": [
+        "T1",
+        "T1c",
+        "T2",
+        "FLAIR"
+      ],
+      "missing_value_after_normalization": 0.0
+    },
+    "modality_dropout": {
+      "applied": "after augmentation",
+      "other_subsets": "uniform over the 14 non-full, non-empty subsets",
+      "p_full": 0.5,
+      "tuned": false
+    },
+    "model": {
+      "arms": {
+        "A": {
+          "modality_dropout": false
+        },
+        "B": {
+          "modality_dropout": true
+        }
+      },
+      "checkpoint": "checkpoint_final",
+      "configuration": "3d_fullres",
+      "ensemble": "mean of the 3 members' sigmoid probabilities",
+      "epochs": 250,
+      "framework": "nnU-Net v2",
+      "inference": {
+        "mirroring": false,
+        "sliding_window_step": 0.5,
+        "threshold": 0.5
+      },
+      "region_based": true,
+      "save_every": 5,
+      "seeds": [
+        0,
+        1,
+        2
+      ]
+    },
+    "regions": {
+      "brats2021": {
+        "ET": [
+          4
+        ],
+        "TC": [
+          1,
+          4
+        ],
+        "WT": [
+          1,
+          2,
+          4
+        ]
+      },
+      "brats_africa_expected": {
+        "ET": [
+          3
+        ],
+        "TC": [
+          1,
+          3
+        ],
+        "WT": [
+          1,
+          2,
+          3
+        ]
+      },
+      "brats_africa_labels_verified_on_files": false
+    },
+    "seeds": {
+      "bootstrap": 12345,
+      "figure_case_sampling": 7,
+      "split": 20260927,
+      "training": [
+        0,
+        1,
+        2
+      ]
+    },
+    "split": {
+      "proportions": {
+        "internal_test": 0.2,
+        "train": 0.7,
+        "validation": 0.1
+      },
+      "seed": 20260927,
+      "stratification": [
+        "ET present in any member vs absent in all members",
+        "tertile of mean member WT volume"
+      ],
+      "unit": "patient_group"
+    },
+    "statistics": {
+      "alpha": 0.05,
+      "bootstrap_replicates": 10000,
+      "bootstrap_seed": 12345,
+      "bootstrap_unit": "patient_group",
+      "ci_level": 0.95,
+      "ci_method": "percentile",
+      "ci_sensitivity": "BCa",
+      "families": {
+        "F1": "S1: DeltaAURC_c for the 4 C4 conditions, internal (4 tests)",
+        "F2": "S8: mean over C4 on UPenn and on BraTS-Africa (2 tests)",
+        "F3": "S7: Delta-risk at q = 0.80 on internal test, UPenn, BraTS-Africa (3 tests)",
+        "F3b": "S7: Delta-coverage at q = 0.80 on internal test, UPenn, BraTS-Africa (3 tests)",
+        "F4": "S2: TC and WT mean over C4 (2 tests)",
+        "F5": "S9: arm A DeltaAURC_c over C4 — descriptive only"
+      },
+      "multiplicity": "Holm within family only; no global FWER claim",
+      "p_value": "2 * min(P*(delta >= 0), P*(delta <= 0))"
+    },
+    "threshold_transfer": {
+      "condition_weighting": "equal",
+      "failure_analysis_q": 0.2,
+      "full_used_for_tau": false,
+      "population": "C4",
+      "q_primary": 0.8,
+      "q_sensitivity": [
+        0.7,
+        0.9
+      ],
+      "rule": "largest observed U1 value such that coverage(validation, U1 >= tau) >= q"
+    },
+    "uncertainty": {
+      "I": "-(validation mean risk of the condition), same arm's ensemble",
+      "U1": "mean pairwise Dice between the three members' binary masks (threshold 0.5); both empty -> 1",
+      "U2": "negative mean binary entropy of ensemble-mean probability within ROI (union of member masks dilated by 3 voxels); empty ROI -> entropy 0",
+      "U3": "single-model (seed 0) mean max-probability within the ROI",
+      "roi_dilation_voxels": 3
+    }
+  },
+  "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
+  "version": "v1.0"
+}

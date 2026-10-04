@@ -1,0 +1,20 @@
+# Evaluation configuration (protocol §3, §4, §9, §11-§15). TEMPLATE - NOT AUTHORIZED.
+# Internal-test / external evaluation requires the eval-v1 tag (gate C6) and closed gates.
+protocol_version: v1.0
+inference: {sliding_window_step: 0.5, mirroring: false, threshold: 0.5, ensemble: "mean of 3 members"}
+conditions:
+  C5: ["Full", "-T1", "-T1c", "-T2", "-FLAIR"]
+  C4: ["-T1", "-T1c", "-T2", "-FLAIR"]
+  C15: {sets: [internal_test], arm: B}
+regions: [WT, TC, ET]
+scores: [U1, U2, U3, I]
+primary:
+  estimand: "mean over C4 of ET Delta-AURC_c = AURC_c(U1) - AURC_c(I); internal test; arm B"
+  decision_rule: "supported iff the 95% percentile CI lies entirely below 0"
+bootstrap: {replicates: 10000, seed: 12345, unit: patient_group, ci: percentile, sensitivity: BCa}
+thresholds: {q_primary: 0.80, q_sensitivity: [0.70, 0.90], failure_analysis_q: 0.20, population: C4, full_used: false}
+calibration: {bins: 15, roi_dilation_voxels: 3}
+volume_failure: {threshold: 0.40, sensitivity: 0.65, min_gt_et_ml: 1.0}
+hd95: {evaluator: null, pinned_at: "gate C6"}   # not implemented until the evaluator is pinned
+eval_tag: eval-v1
+ledger: experiments/evaluation_ledger.jsonl

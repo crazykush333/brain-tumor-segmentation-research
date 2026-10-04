@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brats-uncertainty/derived_data_manifest.schema.json",
+  "title": "DERIVED/PROCESSED DATA MANIFEST",
+  "description": "Files computed from a parent manifest (e.g. nnU-Net preprocessing). Never committed for real data.",
+  "type": "object",
+  "required": [
+    "manifest_type",
+    "schema_version",
+    "synthetic",
+    "data_class",
+    "parent_manifest_sha256",
+    "derivation",
+    "files",
+    "summary",
+    "duplicates",
+    "manifest_sha256",
+    "stamp"
+  ],
+  "properties": {
+    "manifest_type": {
+      "const": "derived"
+    },
+    "parent_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "derivation": {
+      "type": "object",
+      "required": [
+        "tool",
+        "description",
+        "config_sha256"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "n_files",
+        "n_cases",
+        "n_images",
+        "n_labels",
+        "total_bytes"
+      ]
+    },
+    "duplicates": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "groups of relpaths with identical SHA-256"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of canonical JSON of all fields except manifest_sha256 and stamp"
+    },
+    "stamp": {
+      "type": "object",
+      "required": [
+        "created_at",
+        "code_commit",
+        "code_dirty",
+        "package_version",
+        "protocol_version",
+        "protocol_sha256",
+        "config_sha256",
+        "environment"
+      ]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/file"
+      }
+    },
+    "schema_version": {
+      "const": 3
+    },
+    "synthetic": {
+      "type": "boolean",
+      "description": "true only for SYNTHETIC_TEST_DATA"
+    },
+    "data_class": {
+      "enum": [
+        "SYNTHETIC_TEST_DATA",
+        "REAL_RESEARCH_DATA"
+      ],
+      "description": "explicit data class; must agree with 'synthetic'"
+    }
+  },
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": [
+        "collection",
+        "case_id",
+        "file_type",
+        "modality",
+        "filename",
+        "relpath",
+        "size_bytes",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collection": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "case_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file_type": {
+          "enum": [
+            "image",
+            "label",
+            "metadata",
+            "other",
+            "derived"
+          ]
+        },
+        "modality": {
+          "enum": [
+            "T1",
+            "T1c",
+            "T2",
+            "FLAIR",
+            null
+          ]
+        },
+        "filename": {
+          "type": "string"
+        },
+        "relpath": {
+          "type": "string",
+          "description": "relative path; never absolute"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

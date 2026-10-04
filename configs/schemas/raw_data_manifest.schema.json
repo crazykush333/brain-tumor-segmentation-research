@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brats-uncertainty/raw_data_manifest.schema.json",
+  "title": "RAW DATA MANIFEST (gate B5)",
+  "description": "Files exactly as acquired via the B1-approved route. Real manifests are private research artifacts; only manifest_sha256 and summary are published. Validated in code by brats_uncertainty.data.manifest_doc.validate_manifest_doc.",
+  "type": "object",
+  "required": [
+    "manifest_type",
+    "schema_version",
+    "synthetic",
+    "data_class",
+    "dataset",
+    "dataset_version",
+    "doi",
+    "source_url",
+    "acquisition",
+    "metadata_records",
+    "source_layout",
+    "cases",
+    "files",
+    "summary",
+    "duplicates",
+    "manifest_sha256",
+    "stamp"
+  ],
+  "properties": {
+    "manifest_type": {
+      "const": "raw"
+    },
+    "dataset": {
+      "type": "string"
+    },
+    "dataset_version": {
+      "type": "string"
+    },
+    "doi": {
+      "type": "string",
+      "pattern": "^10\\."
+    },
+    "source_url": {
+      "type": "string",
+      "pattern": "^https://"
+    },
+    "acquisition": {
+      "type": "object",
+      "required": [
+        "record_fingerprint",
+        "acquired_at",
+        "storage_location",
+        "route"
+      ],
+      "properties": {
+        "record_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "n_files",
+        "n_cases",
+        "n_images",
+        "n_labels",
+        "total_bytes"
+      ]
+    },
+    "duplicates": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "groups of relpaths with identical SHA-256"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of canonical JSON of all fields except manifest_sha256 and stamp"
+    },
+    "stamp": {
+      "type": "object",
+      "required": [
+        "created_at",
+        "code_commit",
+        "code_dirty",
+        "package_version",
+        "protocol_version",
+        "protocol_sha256",
+        "config_sha256",
+        "environment"
+      ]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/file"
+      }
+    },
+    "schema_version": {
+      "const": 3
+    },
+    "synthetic": {
+      "type": "boolean",
+      "description": "true only for SYNTHETIC_TEST_DATA"
+    },
+    "data_class": {
+      "enum": [
+        "SYNTHETIC_TEST_DATA",
+        "REAL_RESEARCH_DATA"
+      ],
+      "description": "explicit data class; must agree with 'synthetic'"
+    },
+    "metadata_records": {
+      "type": "object",
+      "description": "B3/B4 records of the metadata files included in the manifest (real B5 requires both); each file must still match its recorded SHA-256",
+      "propertyNames": {
+        "enum": [
+          "B3",
+          "B4"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "file_name",
+          "sha256",
+          "record_fingerprint"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file_name": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "record_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "source_layout": {
+      "type": "object",
+      "description": "detected tree layout (the official TCIA delivery is nested_collections: <collection>/<case_id>/), cases per collection, and the data root's path inside the B2 storage; never flattened",
+      "required": [
+        "layout",
+        "collections",
+        "data_root_reference"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "layout": {
+          "enum": [
+            "flat",
+            "nested_collections",
+            "empty"
+          ]
+        },
+        "collections": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "data_root_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "relative path in the B2 storage; never absolute"
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "description": "derived from the image/label files: one entry per case, sorted by relative_case_path",
+      "items": {
+        "type": "object",
+        "required": [
+          "collection",
+          "case_id",
+          "relative_case_path",
+          "modalities",
+          "label",
+          "n_files",
+          "total_bytes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "collection": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "relative_case_path": {
+            "type": "string",
+            "description": "<collection>/<case_id> or <case_id>"
+          },
+          "modalities": {
+            "type": "object",
+            "description": "modality -> relpath"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "n_files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": [
+        "collection",
+        "case_id",
+        "file_type",
+        "modality",
+        "filename",
+        "relpath",
+        "size_bytes",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collection": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "source collection directory (nested layout), else null"
+        },
+        "case_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file_type": {
+          "enum": [
+            "image",
+            "label",
+            "metadata",
+            "other",
+            "derived"
+          ]
+        },
+        "modality": {
+          "enum": [
+            "T1",
+            "T1c",
+            "T2",
+            "FLAIR",
+            null
+          ]
+        },
+        "filename": {
+          "type": "string"
+        },
+        "relpath": {
+          "type": "string",
+          "description": "relative path; never absolute"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Main training runs (protocol §9-§10). TEMPLATE - NOT AUTHORIZED.
+# Guarded action "train_main" requires B1-B12 and D1-D6 closed.
+protocol_version: v1.0
+framework: "nnU-Net v2"
+nnunet_version: null          # pinned at M1 / EXP-001; recorded, never assumed
+configuration: 3d_fullres
+region_based: true
+epochs: 250                   # may become 150 only via SR1/SR6, logged
+save_every: 5
+checkpoint: checkpoint_final
+fold: 0                       # fixed splits_final.json = frozen train/validation split
+seeds: [0, 1, 2]
+arms:
+  A:
+    trainer: nnUNetTrainer_BratsUnc_250ep
+    modality_dropout: false
+  B:
+    trainer: nnUNetTrainer_BratsUnc_250ep_ModalityDropout
+    modality_dropout: {p_full: 0.5, other_subsets: "uniform over the 14 non-full non-empty subsets", applied: "after augmentation"}
+raw_dataset_contains: ["train", "validation"]   # never test data (§8)

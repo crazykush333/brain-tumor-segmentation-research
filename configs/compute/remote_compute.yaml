@@ -1,0 +1,92 @@
+# Remote GPU execution of protocol v1.0 (protocol §17, §24). Read by `brats-uncertainty
+# compute-preflight` and the job runner. Values marked ESTIMATE are planning assumptions,
+# replaced by EXP-001 / B2 measurements; they are never reported as measurements.
+schema_version: 1
+protocol_version: v1.0
+
+requirements:
+  python_min: "3.10"
+  gpu:
+    cuda_required: true
+    min_vram_gib: 11          # ESTIMATE: nnU-Net v2 3d_fullres default patch/batch; confirmed at EXP-001
+    recommended_vram_gib: 16
+  ram:
+    min_gib: 12               # ESTIMATE: below this nnU-Net data augmentation is expected to fail
+    recommended_gib: 32
+  packages:
+    torch: ">=2.2"
+    nnunetv2: ">=2.5"         # exact version pinned at EXP-001 (main_training.yaml nnunet_version)
+  internet:
+    probe_urls:               # HEAD requests only; nothing is downloaded by the probe
+      - "https://www.cancerimagingarchive.net/analysis-result/rsna-asnr-miccai-brats-2021/"
+      - "https://faspex.cancerimagingarchive.net/"
+      - "https://pypi.org/simple/nnunetv2/"
+  transfer_client:            # official TCIA route for the challenge package (IBM Aspera)
+    executables: ["ascli", "ascp"]
+    install: ["gem install aspera-cli", "ascli config transferd install"]  # IBM aspera-cli README
+    # IBM aspera-cli manual: `transferd install` extracts ascp into $HOME/.aspera/sdk (option
+    # sdk_folder), which is not on PATH; ascli finds ascp itself and `ascli config ascp show`
+    # displays the path it uses. An executable not on PATH is located with this command.
+    locate:
+      ascp: ["ascli", "config", "ascp", "show"]
+
+storage:                      # GiB; the training-set size is MEASURED at B2 (Aspera selection), never assumed
+  raw_training_set_gib: null
+  estimate_raw_training_set_gib: 15        # ESTIMATE only, for planning; storage-preflight uses the client value
+  estimate_nnunet_preprocessed_factor: 3   # ESTIMATE: preprocessed size as a multiple of the raw size
+  estimate_checkpoints_per_run_gib: 1      # ESTIMATE: checkpoint_latest/final + logs
+
+environments:
+  kaggle:
+    kind: "private Kaggle notebook session (GPU + Internet enabled); ephemeral session storage only"
+    planning_limits:          # as published by Kaggle at planning time; verify in the account (SR8)
+      session_limit_h: 12
+      weekly_gpu_quota_h: 30
+      persistent_output_gib: 20
+    forbidden: ["Kaggle Dataset containing BraTS data", "saving raw data as notebook output"]
+  colab:
+    kind: "private Colab runtime; ephemeral runtime storage only"
+    planning_limits: {session_limit_h: 12}
+    forbidden: ["sharing raw data via Google Drive"]
+  vm:
+    kind: "private GPU VM or workstation under the owner's control"
+    planning_limits: {}
+    forbidden: ["public buckets", "sharing links to raw data"]
+
+# One job = one resumable unit of work. Gates are checked by the runner/CLI, never bypassed.
+# experiment_id is the top level of the run namespace (models.nnunet.run_namespace).
+jobs:
+  JOB-01:
+    kind: b2_acquisition
+    experiment_id: B2
+    description: "official TCIA transfer (or manual official delivery), provider checksums, B2 local import + inventory"
+    gated_action: acquire_data
+    needs_gpu: false
+    estimate_min_free_disk_gib: 45   # ESTIMATE: 2 x selection + margin; replaced by storage-preflight
+  JOB-GROUPING:
+    kind: grouping_and_split
+    experiment_id: B7-B12
+    description: "T_screen, pairwise screen, (human) B8 review, groups, final split - after B6 only"
+    gated_action: compute_t_screen
+    needs_gpu: false
+    estimate_min_free_disk_gib: 45
+  JOB-PILOT:
+    kind: compute_pilot
+    experiment_id: EXP-001
+    description: "EXP-001 compute pilot (D gates); no label-based scientific metrics"
+    gated_action: run_exp001
+    needs_gpu: true
+    estimate_min_free_disk_gib: 70
+  JOB-02: {kind: training, experiment_id: MAIN, arm: A, seed: 0, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-03: {kind: training, experiment_id: MAIN, arm: A, seed: 1, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-04: {kind: training, experiment_id: MAIN, arm: A, seed: 2, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-05: {kind: training, experiment_id: MAIN, arm: B, seed: 0, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-06: {kind: training, experiment_id: MAIN, arm: B, seed: 1, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-07: {kind: training, experiment_id: MAIN, arm: B, seed: 2, gated_action: train_main, needs_gpu: true, estimate_min_free_disk_gib: 70}
+  JOB-08:
+    kind: evaluation
+    experiment_id: EVAL
+    description: "internal validation/test inference, thresholds (C5), external evaluation, statistics, figures"
+    gated_action: infer_validation
+    needs_gpu: true
+    estimate_min_free_disk_gib: 70

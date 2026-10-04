@@ -1,0 +1,32 @@
+# Owner confirmations of the implementation choices in
+# docs/reproducibility/REPRODUCIBILITY.md section 4. Set decision to CONFIRMED (with the date)
+# or CHANGE_REQUESTED (the code is then changed and re-tested before that gate).
+# The master runner checks the items due before each step and never edits this file.
+confirmed_by: null
+items:
+  1: {decision: PENDING, confirmed_on: null}  # Dilation by 3 voxels = Euclidean ball of radius 3
+  2: {decision: PENDING, confirmed_on: null}  # U2 entropy in bits
+  3: {decision: PENDING, confirmed_on: null}  # U3 ROI; empty ROI -> 1.0
+  4: {decision: PENDING, confirmed_on: null}  # ECE definition
+  5: {decision: PENDING, confirmed_on: null}  # Second-review resolution (§6.2)
+  6: {decision: PENDING, confirmed_on: null}  # Split algorithm details (§6.3)
+  7: {decision: PENDING, confirmed_on: null}  # Bootstrap RNG
+  8: {decision: PENDING, confirmed_on: null}  # BCa
+  9: {decision: PENDING, confirmed_on: null}  # Transfer bootstrap
+  10: {decision: PENDING, confirmed_on: null}  # Equal condition weighting in S7
+  11: {decision: PENDING, confirmed_on: null}  # Exactness (U1, tau_q, volume thresholds)
+  12: {decision: PENDING, confirmed_on: null}  # Fixed single-fold splits_final.json; seed via env
+  13: {decision: PENDING, confirmed_on: null}  # Missingness on the preprocessed (normalized) tensor
+  14: {decision: PENDING, confirmed_on: null}  # HD95 = pinned BraTS evaluator
+  16: {decision: PENDING, confirmed_on: null}  # B-gate lifecycle
+  17: {decision: PENDING, confirmed_on: null}  # Record determinism
+  18: {decision: PENDING, confirmed_on: null}  # B6 inputs
+  20: {decision: PENDING, confirmed_on: null}  # Failure handling
+  21: {decision: PENDING, confirmed_on: null}  # Path safety
+  22: {decision: PENDING, confirmed_on: null}  # EXP-001 pilot selection
+  23: {decision: PENDING, confirmed_on: null}  # EXP-001 measurement definitions
+  24: {decision: PENDING, confirmed_on: null}  # SR2 = ensemble ET Dice
+  25: {decision: PENDING, confirmed_on: null}  # S13 case-weighted AURC
+  26: {decision: PENDING, confirmed_on: null}  # I-then-U1 ranker
+  27: {decision: PENDING, confirmed_on: null}  # Supporting margin 0.015
+  28: {decision: PENDING, confirmed_on: null}  # Figure-case rule

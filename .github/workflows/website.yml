@@ -1,0 +1,63 @@
+name: website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "docs/project_status.yaml"
+      - "configs/**"
+      - "experiments/**"
+      - "results/**"
+      - "src/brats_uncertainty/results/**"
+      - ".github/workflows/website.yml"
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/project_status.yaml"
+      - "configs/**"
+      - "experiments/**"
+      - "results/**"
+      - "src/brats_uncertainty/results/**"
+      - ".github/workflows/website.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify website data is in sync with sources of truth
+        run: |
+          python -m pip install -e .
+          brats-uncertainty export-site-data --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install
+        working-directory: website
+        run: npm ci
+      - name: Type check
+        working-directory: website
+        run: npm run typecheck
+      - name: Production build (static export)
+        working-directory: website
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+      - name: Results page must show the no-results statement while no results are available
+        run: |
+          python - <<'EOF'
+          import json, pathlib, sys
+          r = json.loads(pathlib.Path("website/data/results.json").read_text(encoding="utf-8"))
+          html = pathlib.Path("website/out/results/index.html").read_text(encoding="utf-8")
+          if not r["available"] and r["statement"] not in html:
+              sys.exit("results page does not show the no-results statement")
+          EOF

@@ -1,0 +1,30 @@
+# TCIA BraTS-Africa (external population). Protocol §5, §8; gates C1-C3.
+# Used ONLY for final evaluation with eval-v1 code. Never for training, tuning or thresholds.
+name: brats_africa
+role: "external evaluation only"
+source:
+  provider: "TCIA BraTS-Africa, Version 1 (updated 2024-09-04); DOI 10.7937/v8h6-8x67"
+  licence: "CC BY 4.0 (processed release)"
+  metadata_file: "BraTS-Africa_TCIA_datainfo_v2.xlsx"   # never committed
+  route: null
+data_root_env: BRATS_AFRICA_DATA_ROOT
+
+inclusion:
+  sheet: "95 Glioma"
+  excluded_sheet: "51 OtherNeoplasms"
+  max_eligible: 95                 # final count frozen at C3 after file inspection
+  id_column: null                  # case-ID column header of the "95 Glioma" sheet; confirmed on the file (C1)
+  eligible_count: null
+
+layout:
+  # Expected naming follows the BraTS 2023 SSA convention; NOT verified on the TCIA files (C1-C2).
+  verified_on_files: false
+  case_id_pattern: "BraTS-SSA-\\d{5}-\\d{3}"
+  modality_suffixes: {T1: "-t1n", T1c: "-t1c", T2: "-t2w", FLAIR: "-t2f"}
+  label_suffix: "-seg"
+  file_ending: ".nii.gz"
+
+labels:
+  verified_on_files: false         # gate C1
+  expected_values: [0, 1, 2, 3]    # 1 = NETC, 2 = SNFH, 3 = ET (BraTS 2023 documentation)
+  regions_expected: {ET: [3], TC: [1, 3], WT: [1, 2, 3]}

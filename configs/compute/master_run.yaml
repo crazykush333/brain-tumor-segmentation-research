@@ -1,0 +1,72 @@
+# Master execution of protocol v1.0 (`brats-uncertainty master-run`). No secrets here.
+# Every value is an operational setting; none changes the frozen scientific design.
+schema_version: 1
+protocol_version: v1.0
+
+paths:
+  # Persistent private storage of the full-study environment (raw data, nnU-Net folders,
+  # run directories, the master state journal). Never inside the repository.
+  work_env: BRATS_WORK
+  state_env: BRATS_STATE_DIR          # default: $BRATS_WORK/state
+  records_dir: docs/data/records      # committed B2-B9 execution records (IDs/hashes only)
+  splits_dir: splits                  # committed IDs/group IDs + hashes (B9-B12)
+  exp001_dir: results/EXP-001         # committed pilot measurements (no images/checkpoints)
+  run_summary: docs/research/execution/run_summary.json   # execution state (no results)
+  final_audit: docs/research/FINAL_RESEARCH_AUDIT.md
+
+acquisition:                          # gate B2, approved route only (amendment v1.0-A1)
+  route: "Direct official TCIA access into a private, access-restricted computational environment"
+  dataset: "RSNA-ASNR-MICCAI-BraTS-2021"
+  dataset_version: "Version 1 (2023/08/25)"
+  doi: "10.7937/jc8x-9874"
+  source_url: "https://www.cancerimagingarchive.net/analysis-result/rsna-asnr-miccai-brats-2021/"
+  acquired_by: "Ayush Kushwaha"
+  package_root: "RSNA-ASNR-MICCAI-BraTS-2021"
+  sums_file: "RSNA-ASNR-MICCAI-BraTS-2021.sums"
+  training_set: "RSNA-ASNR-MICCAI-BraTS-2021/BraTS2021_TrainingSet"
+  # Route B: an official delivery already received with the official client into private
+  # storage. Its directory is given by this environment variable (or an approved mount).
+  delivery_env: BRATS_OFFICIAL_DELIVERY
+  # Route A: runtime receive with the official IBM Aspera CLI. Both values must be set by
+  # the owner from the installed client's own help output; the evidence file holds that
+  # output (committed). Nothing is ever guessed: unset -> B2 is BLOCKED.
+  receive_command: null
+  receive_command_evidence: null
+  selected_gib: null                  # route A: selection size shown by the client (measured)
+  metadata_files:                     # B3/B4 files, official direct HTTPS (B2 runbook §1)
+    - name: "BraTS2021_MappingToTCIA.xlsx"
+      url: "https://www.cancerimagingarchive.net/wp-content/uploads/BraTS2021_MappingToTCIA.xlsx"
+      gate: B3
+      source_url: "https://www.cancerimagingarchive.net/analysis-result/rsna-asnr-miccai-brats-2021/"
+    - name: "UCSF-PDGM-metadata_v5.csv"
+      url: "https://www.cancerimagingarchive.net/wp-content/uploads/UCSF-PDGM-metadata_v5.csv"
+      gate: B4
+      source_url: "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/"
+
+review:                               # gate B8: human review by the two protocol reviewers
+  decisions_file: docs/data/records/B8_reviews.csv
+  decisions_env: BRATS_B8_REVIEWS
+
+training:
+  dataset_id: 501                     # nnU-Net dataset id (implementation detail)
+  dataset_name: BraTS2021Dev
+  pilot_dataset_id: 502
+  pilot_dataset_name: BraTS2021Pilot
+  jobs: [JOB-02, JOB-03, JOB-04, JOB-05, JOB-06, JOB-07]
+
+git:
+  identity: {name: "Ayush Kushwaha", email: "ayushkushwaha21029@gmail.com"}
+  remote: origin
+  branch: main                        # default branch of the public repository
+  token_env: GITHUB_TOKEN             # only if the environment has no credential helper
+  # Only these paths are ever staged by the runner (never data, checkpoints, predictions,
+  # licensed metadata or credentials; the repository scan runs before every commit).
+  commit_paths:
+    - docs/project_status.yaml
+    - docs/data/records/
+    - docs/research/execution/
+    - docs/research/FINAL_RESEARCH_AUDIT.md
+    - experiments/EXP-001/
+    - results/
+    - splits/
+    - website/data/

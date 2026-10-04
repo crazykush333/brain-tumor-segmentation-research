@@ -1,0 +1,57 @@
+# BraTS 2021 training data (development + held-out institution). Protocol §5, §6, §8.
+# No data is stored in this repository. Paths are supplied at run time (env vars / CLI).
+name: brats2021
+role: "development (site != 1) and held-out institution (site == 1)"
+source:
+  provider: "RSNA-ASNR-MICCAI BraTS 2021 (Synapse syn25829067 / syn25829070; TCIA DOI 10.7937/jc8x-9874)"
+  licence: "CC BY 4.0 (challenge package and ID crosswalk per TCIA analysis-result page); Synapse terms apply"
+  route: null                     # set only after gate B1 closes
+data_root_env: BRATS2021_DATA_ROOT
+
+# Identity that B2/B3/B4/B5 evidence records must carry (checked by
+# brats_uncertainty.data.evidence). Values verified on the official pages
+# 2026-09-29 (docs/data/DATA_ACCESS.md §1).
+evidence_identity:
+  dataset: "RSNA-ASNR-MICCAI-BraTS-2021"
+  doi: "10.7937/jc8x-9874"
+  official_source_prefixes:
+    - "https://www.cancerimagingarchive.net/"
+    - "https://www.synapse.org/"
+
+layout:
+  # Conventional BraTS 2021 file naming. Must be confirmed on the acquired files (B5).
+  verified_on_files: false
+  # Official TCIA delivery (seen in the Faspex package listing, B2 pre-flight 2026-10-01):
+  # RSNA-ASNR-MICCAI-BraTS-2021/BraTS2021_TrainingSet/<collection>/<case_id>/<files>.
+  # The tree is never flattened; integrity and B5 require this layout (data.layout).
+  tree: "nested_collections"
+  case_id_pattern: "BraTS2021_\\d{5}"
+  modality_suffixes: {T1: "_t1", T1c: "_t1ce", T2: "_t2", FLAIR: "_flair"}
+  label_suffix: "_seg"
+  file_ending: ".nii.gz"
+  # Expected volume shape. Deliberately unset. It may only be set BEFORE B5/B6 run:
+  # this file's SHA-256 is recorded in B5/B6 evidence, and any later change makes
+  # that evidence stale (rejected by the status validator).
+  expected_shape: null
+
+labels:
+  values: [0, 1, 2, 4]
+  regions: {ET: [4], TC: [1, 4], WT: [1, 2, 4]}
+
+crosswalk:
+  file: "BraTS2021_MappingToTCIA.xlsx"   # licensed metadata: never committed; SHA-256 recorded at B3
+  sheet: null                             # first worksheet unless confirmed otherwise at B3
+  sha256: null                            # recorded from the actual file at B3; never typed by hand
+  # Column headers as recorded in docs/research/15_PREFREEZE_VERIFICATION_REPORT.md.
+  # Re-confirm against the hashed file at B3.
+  columns:
+    case_id: "BraTS2021 ID"
+    site_id: "Site ID"
+    collection: "Data Collection"
+    tcia_subject_id: "TCIA PatientID"
+  hoi_site_id: "1"
+  expected_counts: {total: 1251, held_out_institution: 511, development: 740}
+
+ucsf_pdgm_metadata:
+  file: "UCSF-PDGM-metadata_v5.csv"      # licensed metadata: never committed; SHA-256 recorded at B4
+  sha256: null

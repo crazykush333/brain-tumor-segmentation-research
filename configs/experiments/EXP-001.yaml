@@ -1,0 +1,25 @@
+# EXP-001 compute pilot. Specification: docs/experiments/EXP-001_COMPUTE_PILOT_SPEC.md
+# STATUS: PLANNED - NOT AUTHORIZED. Guarded action "run_exp001" requires B1, B2, D1, D2.
+experiment_id: EXP-001
+protocol_version: v1.0
+purpose: "Replace §17 compute ESTIMATES with measurements; decide SR1/SR6. No scientific findings."
+pilot:
+  n_cases: 40
+  selection_seed: 101
+  pool: "development (site != 1) only"
+  epochs_per_run: 5
+  gpu_hour_cap: 10
+runs:
+  - {id: P1, hardware: "P100", arm: B, seeds: [0], epochs: 5}
+  - {id: P2, hardware: "T4", arm: B, seeds: [0], epochs: 5}
+  - {id: P3, hardware: "2xT4 concurrent", arm: B, seeds: [0, 1], epochs: 5}
+  - {id: P4, hardware: "T4", arm: A, seeds: [0], epochs: 5}
+  - {id: P5, hardware: "T4", arm: B, seeds: [1, 2], epochs: 5}
+  - {id: R1, hardware: "T4", arm: B, seeds: [0], procedure: "resume test"}
+  - {id: I1, hardware: "T4", arm: B, procedure: "inference timing, no label-based metrics"}
+forbidden:
+  - "any Dice, calibration, AURC or reliability metric"
+  - "site-1 or BraTS-Africa data"
+  - "hyperparameter tuning"
+  - "creating the final split"
+outputs_dir: "results/EXP-001"

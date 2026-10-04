@@ -1,0 +1,106 @@
+# ---------------------------------------------------------------------------
+# Medical / study data — NEVER commit (see docs/data/DATA_ACCESS.md)
+# ---------------------------------------------------------------------------
+*.nii
+*.nii.gz
+*.dcm
+*.mha
+*.mhd
+*.nrrd
+*.mgz
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.pkl
+*.pickle
+# Root-level data directories only (anchored, so src/brats_uncertainty/data/
+# and docs/data/ are NOT ignored). Everything under /data/ is private research
+# data (raw/, manifests/, derived/, cache/); only its README is tracked.
+/data/*
+!/data/README.md
+# Archives and spreadsheets are treated as potential data/metadata.
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.xlsx
+*.xls
+# Label volumes (redundant with *.nii.gz, kept explicit)
+*_seg.nii*
+*-seg.nii*
+/raw_data/
+/study_data/
+/nnUNet_raw/
+/nnUNet_preprocessed/
+/nnUNet_results/
+**/predictions/
+# Licensed metadata files are not redistributed (IDs-only derivatives may be).
+BraTS2021_MappingToTCIA.xlsx
+UCSF-PDGM-metadata*.csv
+BraTS-Africa_TCIA_datainfo*.xlsx
+
+# ---------------------------------------------------------------------------
+# Models / checkpoints
+# ---------------------------------------------------------------------------
+*.pt
+*.pth
+*.ckpt
+*.onnx
+checkpoints/
+
+# ---------------------------------------------------------------------------
+# Secrets / credentials
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+kaggle.json
+**/.kaggle/
+*kaggle*.json
+.synapseConfig
+.netrc
+credentials*.json
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Website (Next.js)
+# ---------------------------------------------------------------------------
+website/node_modules/
+website/.next/
+website/out/
+website/.vercel/
+website/.netlify/
+website/next-env.d.ts
+website/tsconfig.tsbuildinfo
+
+# ---------------------------------------------------------------------------
+# OS / IDE
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local agent/editor tooling
+.claude/

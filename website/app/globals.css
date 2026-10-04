@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-white text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200;
+}
+
+.prose-block p {
+  @apply my-3 leading-7;
+}
+
+.prose-block h2 {
+  @apply mt-10 mb-3 font-serif text-2xl font-semibold text-slate-900 dark:text-slate-50;
+}
+
+.prose-block h3 {
+  @apply mt-6 mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100;
+}
+
+.prose-block ul {
+  @apply my-3 list-disc space-y-1 pl-6;
+}
+
+.prose-block code,
+.mono {
+  @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em] dark:bg-slate-800;
+}
+
+.table-base {
+  @apply w-full border-collapse text-left text-sm;
+}
+
+.table-base th {
+  @apply border-b border-slate-300 py-2 pr-4 font-semibold dark:border-slate-700;
+}
+
+.table-base td {
+  @apply border-b border-slate-200 py-2 pr-4 align-top dark:border-slate-800;
+}

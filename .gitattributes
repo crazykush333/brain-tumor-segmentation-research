@@ -1,0 +1,14 @@
+# Normalize line endings in the repository (LF). Working-tree line endings may
+# differ per platform; the frozen-protocol integrity check hashes LF-normalized
+# text, which equals the committed blob at tag protocol-v1.0.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+
+# Imaging and array formats must never be committed (see SECURITY.md).
+*.nii binary
+*.nii.gz binary
+*.dcm binary

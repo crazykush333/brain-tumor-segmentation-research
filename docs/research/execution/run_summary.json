@@ -1,0 +1,238 @@
+{
+  "dataset": {
+    "acquired": false,
+    "manifest_sha256": null
+  },
+  "gates": {
+    "B1": "PASSED",
+    "B10": "LOCKED",
+    "B11": "LOCKED",
+    "B12": "LOCKED",
+    "B2": "AUTHORIZED",
+    "B3": "LOCKED",
+    "B4": "LOCKED",
+    "B5": "LOCKED",
+    "B6": "LOCKED",
+    "B7": "LOCKED",
+    "B8": "LOCKED",
+    "B9": "LOCKED",
+    "C1": "NOT_STARTED",
+    "C2": "NOT_STARTED",
+    "C3": "NOT_STARTED",
+    "C4": "NOT_STARTED",
+    "C5": "NOT_STARTED",
+    "C6": "NOT_STARTED",
+    "D1": "CLOSED",
+    "D2": "CLOSED",
+    "D3": "NOT_STARTED",
+    "D4": "NOT_STARTED",
+    "D5": "NOT_STARTED",
+    "D6": "NOT_STARTED"
+  },
+  "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
+  "git_commit": "808e4080ac966e0870a72dbb06aba2a50ddcb81d",
+  "git_dirty": false,
+  "protocol": {
+    "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
+    "tag": "protocol-v1.0",
+    "version": "v1.0"
+  },
+  "results": null,
+  "results_available": false,
+  "resumes": 1,
+  "schema_version": 1,
+  "sessions": 2,
+  "split_hashes": null,
+  "steps": {
+    "B10": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B11": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B12": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B2": {
+      "attempts": 0,
+      "status": "BLOCKED",
+      "summary": "compute environment not ready for JOB-01: RAM 7.4 GiB < minimum 12 GiB (ESTIMATE); official transfer client not installed: ['ascli', 'ascp'] (install: gem install aspera-cli && ascli config transferd install)"
+    },
+    "B3": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B4": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B5": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B6": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B7": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B8": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "B9": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "C1": {
+      "attempts": 2,
+      "status": "REVIEW_REQUIRED",
+      "summary": "C1: no approved data route for BraTS-Africa (configs/dataset/brats_africa.yaml source.route is null; B1 covers the BraTS 2021 package only; SR7)"
+    },
+    "C2": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "C3": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "C4": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "C5": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "C6": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "D1": {
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "D1 CLOSED: owner authorization of EXP-001"
+    },
+    "D2": {
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "D2 CLOSED: approved data route (B1)"
+    },
+    "D3": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "D4": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "D5": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "D6": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "ENV": {
+      "attempts": 2,
+      "status": "PASSED",
+      "summary": "vm: GPU none, status NOT_READY"
+    },
+    "EXTERNAL_AFRICA": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "EXTERNAL_HOI": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "FINAL_AUDIT": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "INTERNAL_TEST": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "PILOT": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "STATISTICS": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-A0": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-A1": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-A2": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-B0": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-B1": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "TRAIN-B2": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "VALIDATION": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "WEBSITE": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    }
+  }
+}

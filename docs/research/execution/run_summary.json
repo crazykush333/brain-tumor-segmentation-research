@@ -8,7 +8,7 @@
     "B10": "LOCKED",
     "B11": "LOCKED",
     "B12": "LOCKED",
-    "B2": "AUTHORIZED",
+    "B2": "RUNNING",
     "B3": "LOCKED",
     "B4": "LOCKED",
     "B5": "LOCKED",
@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "d073041738804df7f2d21362ad0c48c3170d1724",
+  "git_commit": "21b2954873fd078a6e779fdcede906b1e890ad21",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -39,9 +39,9 @@
   },
   "results": null,
   "results_available": false,
-  "resumes": 5,
+  "resumes": 0,
   "schema_version": 1,
-  "sessions": 6,
+  "sessions": 1,
   "split_hashes": null,
   "steps": {
     "B10": {
@@ -60,9 +60,9 @@
       "summary": ""
     },
     "B2": {
-      "attempts": 0,
-      "status": "BLOCKED",
-      "summary": "compute environment not ready for JOB-01: RAM 7.4 GiB < minimum 12 GiB (ESTIMATE); official transfer client not installed: ['ascli', 'ascp'] (install: gem install aspera-cli && ascli config transferd install)"
+      "attempts": 1,
+      "status": "FAILED",
+      "summary": "integrity/protocol assertion failed: checksum line 1: unrecognized format (supported: GNU '<digest>  <path>', BSD 'ALGO (path) = digest'); extend the parser rather than guessing"
     },
     "B3": {
       "attempts": 0,
@@ -100,7 +100,7 @@
       "summary": ""
     },
     "C1": {
-      "attempts": 6,
+      "attempts": 1,
       "status": "BLOCKED",
       "summary": "C1: BraTS-Africa inputs not available"
     },
@@ -130,14 +130,14 @@
       "summary": ""
     },
     "D1": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "D1 CLOSED: owner authorization of EXP-001"
+      "summary": "gate D1 closed (project status)"
     },
     "D2": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "D2 CLOSED: approved data route (B1)"
+      "summary": "gate D2 closed (project status)"
     },
     "D3": {
       "attempts": 0,
@@ -160,9 +160,9 @@
       "summary": ""
     },
     "ENV": {
-      "attempts": 6,
+      "attempts": 1,
       "status": "PASSED",
-      "summary": "vm: GPU none, status NOT_READY"
+      "summary": "kaggle: GPU Tesla T4, status READY_WITH_LIMITS"
     },
     "EXTERNAL_AFRICA": {
       "attempts": 0,

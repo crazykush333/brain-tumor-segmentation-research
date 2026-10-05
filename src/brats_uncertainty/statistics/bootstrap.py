@@ -124,7 +124,7 @@ def two_sided_p(replicates: NDArray[np.float64]) -> float:
     r = replicates[np.isfinite(replicates)]
     if r.size == 0:
         return float("nan")
-    return float(min(1.0, 2.0 * min(np.mean(r >= 0.0), np.mean(r <= 0.0))))
+    return min(1.0, 2.0 * min(float(np.mean(r >= 0.0)), float(np.mean(r <= 0.0))))
 
 
 def percentile_ci(

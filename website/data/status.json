@@ -98,7 +98,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B2",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Official data acquired via the approved route"
     },
     {
@@ -286,7 +286,7 @@
       "detail": "official files via the B1-approved route; inventory hashed",
       "key": "b2",
       "label": "B2 Data acquisition",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "exact SHA-256 of BraTS2021_MappingToTCIA.xlsx",

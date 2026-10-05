@@ -109,17 +109,17 @@
       "title": "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-05",
       "group": "B",
       "id": "B4",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B5",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "Data manifest and hashes recorded"
     },
     {
@@ -298,13 +298,13 @@
       "detail": "exact SHA-256 of UCSF-PDGM-metadata_v5.csv",
       "key": "b4",
       "label": "B4 UCSF-PDGM metadata hash",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "integrity audit + hashed manifest",
       "key": "b5",
       "label": "B5 Data manifest",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "counts derived from the hashed crosswalk vs protocol targets",

@@ -116,17 +116,17 @@
       "title": "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-05",
       "group": "B",
       "id": "B5",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Data manifest and hashes recorded"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B6",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "Counts derived from the hashed crosswalk and checked against the protocol targets"
     },
     {
@@ -304,13 +304,13 @@
       "detail": "integrity audit + hashed manifest",
       "key": "b5",
       "label": "B5 Data manifest",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "counts derived from the hashed crosswalk vs protocol targets",
       "key": "b6",
       "label": "B6 Count verification",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "T_screen and same-patient screen; after B6 has passed",

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from brats_uncertainty.errors import ConfigError
-from brats_uncertainty.orchestration.audit import write_run_summary
+from brats_uncertainty.orchestration.audit import write_final_audit_for, write_run_summary
 from brats_uncertainty.orchestration.runner import RunReport, plan, run
 from brats_uncertainty.orchestration.state import STATE_FILENAME, load_state, save_state
 from brats_uncertainty.orchestration.steps import Context, RealOps, build_steps, load_master_config
@@ -95,6 +95,7 @@ def master_run(
         },
     )
     write_run_summary(repo_root, load_state(state_path), cfg)
+    write_final_audit_for(repo_root, load_state(state_path), cfg)
     sha = ops.milestone("chore(run): master-run session summary and website data")
     report.commits = list(ops.commits) if sha or ops.commits else []
     state = load_state(state_path)

@@ -574,3 +574,19 @@ def test_retract_removes_publication(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert changes[0][("results", "statement")] == (
         "Scientific results are being independently verified."
     )
+
+
+def test_final_audit_verdict_requires_full_verification() -> None:
+    from brats_uncertainty.orchestration.audit import final_status
+
+    assert final_status(False, None).startswith("NOT VERIFIED - no real scientific result")
+    assert final_status(False, {"overall": "NOT_RUN", "scientific_status": "NOT_RUN"}).startswith(
+        "NOT VERIFIED"
+    )
+    blocked = {"overall": "BLOCKED", "scientific_status": "VERIFIED"}  # website check failed
+    assert final_status(True, blocked).startswith("NOT VERIFIED")
+    assert final_status(False, {"overall": "VERIFIED", "scientific_status": "VERIFIED"}) != (
+        "REAL RESULTS VERIFIED"
+    )
+    verified = {"overall": "VERIFIED", "scientific_status": "VERIFIED"}
+    assert final_status(True, verified) == "REAL RESULTS VERIFIED"

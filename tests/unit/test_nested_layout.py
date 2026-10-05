@@ -622,7 +622,29 @@ def test_storage_preflight_creates_nothing_and_cli_fails_when_short(tmp_path: Pa
 def test_real_state_b2_ready_and_not_executed(repo_root: Path) -> None:
     st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
-    assert st.gate("B2").status == "AUTHORIZED"
+    assert st.gate("B2").status in ("AUTHORIZED", "RUNNING")  # RUNNING once the runner started it
     assert all(st.gate(f"B{i}").status == "LOCKED" for i in range(3, 13))
     assert st.raw["data"]["acquired"] is False
     assert st.raw["data"]["approved_route"] != FAKE_ROUTE
+
+
+def test_checksum_parser_accepts_tcia_single_space_format(tmp_path: Path) -> None:
+    """The official TCIA .sums lists '<md5> <path>' with ONE space (observed 2026-10-06)."""
+    import hashlib
+
+    data = b"SYNTHETIC nifti bytes"
+    rel = f"{SELECT}/ACRIN-FMISO-Brain/BraTS2021_SYNTH001/BraTS2021_SYNTH001_flair.nii.gz"
+    sums = tmp_path / "RSNA-ASNR-MICCAI-BraTS-2021.sums"
+    sums.write_bytes(
+        f"{hashlib.md5(data).hexdigest()} {rel}\n".encode()
+        + b"74e74fcd62aa74145bd6ad8fd6184807 RSNA-ASNR-MICCAI-BraTS-2021/"
+        b"BraTS2021_TrainingSet_dcm/UPENN-GBM/0/Image-1.dcm\n"
+    )
+    parsed = parse_checksum_file(sums)
+    assert parsed.entries[0].path == rel
+    assert parsed.algorithms == ("md5",)
+    base = tmp_path / "base"
+    (base / rel).parent.mkdir(parents=True)
+    (base / rel).write_bytes(data)
+    report = verify_checksums(parsed, base, prefix=SELECT)
+    assert report.ok and report.n_verified == 1 and report.n_not_selected == 1

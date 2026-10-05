@@ -239,7 +239,10 @@ def test_production_state_is_owner_approved_not_synthetic() -> None:
     """SYNTHETIC TEST STATE never leaks into the REAL OWNER-APPROVED PRODUCTION STATE."""
     st = load_status(REPO_ROOT)
     assert st.gate("B1").status == "PASSED"
-    assert st.gate("B2").status == "AUTHORIZED"  # ready, not executed
+    assert st.gate("B2").status in (
+        "AUTHORIZED",
+        "RUNNING",
+    )  # authorized; RUNNING once the runner started it
     assert all(st.gate(f"B{i}").status == "LOCKED" for i in range(3, 13))
     assert st.raw["data"]["authorization"] == "APPROVED"
     assert st.raw["data"]["approved_route"] == OWNER_ROUTE

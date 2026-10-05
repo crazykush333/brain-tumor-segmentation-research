@@ -62,7 +62,10 @@ def test_real_b1_is_owner_approved_with_no_external_authorization(repo_root: Pat
     st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
     assert st.gate("B1").evidence == "docs/data/B1_EVIDENCE_2026-10-01.md"
-    assert st.gate("B2").status == "AUTHORIZED"  # ready, not executed
+    assert st.gate("B2").status in (
+        "AUTHORIZED",
+        "RUNNING",
+    )  # authorized; RUNNING once the runner started it
     assert all(st.gate(f"B{i}").status == "LOCKED" for i in range(3, 13))
     assert st.raw["data"]["authorization"] == "APPROVED"
     assert st.raw["data"]["approved_route"] == OWNER_ROUTE
@@ -84,7 +87,8 @@ def test_real_overview_shows_owner_approved_b1_and_ready_b2(repo_root: Path) -> 
     b1 = next(r for r in rows if r["key"] == "b1")
     assert (b1["label"], b1["status"]) == ("B1 Data route", "ROUTE_AUTHORIZED")
     assert b1["status_label"] == "Authorized — Owner-approved alternative"
-    assert next(r for r in rows if r["key"] == "b2")["status"] == "AUTHORIZED"
+    b2 = next(r for r in rows if r["key"] == "b2")["status"]
+    assert b2 in ("AUTHORIZED", "RUNNING") and b2 == st.gate("B2").status
     site = (repo_root / "website/data/status.json").read_text(encoding="utf-8")
     assert "TCIA approved" not in site
     assert "Owner-approved alternative" in site

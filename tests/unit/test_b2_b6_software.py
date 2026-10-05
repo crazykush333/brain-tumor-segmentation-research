@@ -717,7 +717,10 @@ def test_invalid_transitions_rejected(repo_root: Path) -> None:
         check_invariants({"B1": "PENDING", "B2": "AUTHORIZED"})
     with pytest.raises(ConfigError, match="LOCKED although"):
         check_invariants({"B1": "PASSED", "B2": "LOCKED"})
-    real = load_status(repo_root).raw  # B1 PASSED is terminal; B2 may not skip RUNNING
+    real = copy.deepcopy(load_status(repo_root).raw)  # B1 PASSED is terminal; B2 may not
+    for g in real["gates"]:  # skip RUNNING (snapshot independent of the live B2 state)
+        if g["id"] == "B2":
+            g.update(status="AUTHORIZED", evidence=None, closed_on=None)
     for gid, new in (("B1", "PENDING"), ("B1", "PASSED"), ("B2", "PASSED"), ("B3", "AUTHORIZED")):
         with pytest.raises(ConfigError):
             apply_transition(real, gid, new, evidence="x", on="2000-01-01")
@@ -908,7 +911,7 @@ def test_real_mode_stages_blocked_in_current_repository(repo_root: Path, tmp_pat
 def test_current_status_is_b1_owner_approved_b2_ready_b3_to_b12_locked(repo_root: Path) -> None:
     st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
-    assert st.gate("B2").status == "AUTHORIZED"
+    assert st.gate("B2").status in ("AUTHORIZED", "RUNNING")  # RUNNING once the runner started it
     for i in range(3, 13):
         assert st.gate(f"B{i}").status == "LOCKED", i
     assert st.raw["data"]["authorization"] == "APPROVED"
@@ -923,7 +926,7 @@ def test_current_status_is_b1_owner_approved_b2_ready_b3_to_b12_locked(repo_root
         "protocol": "FROZEN",
         "route_docs": "PREPARED",
         "b1": "ROUTE_AUTHORIZED",
-        "b2": "AUTHORIZED",
+        "b2": st.gate("B2").status,  # AUTHORIZED or RUNNING (asserted above)
         "b3": "LOCKED",
         "b4": "LOCKED",
         "b5": "LOCKED",

@@ -9,6 +9,9 @@ Supported line formats (detected per line; the digest length or the BSD tag
 gives the algorithm):
 
 - GNU coreutils: ``<hexdigest>  <path>`` or ``<hexdigest> *<path>``;
+- single-space:  ``<hexdigest> <path>``, the format of the official TCIA
+  ``RSNA-ASNR-MICCAI-BraTS-2021.sums`` (MD5, one space; observed 2026-10-06, see
+  docs/data/B2_ASPERA_RECEIVE_EVIDENCE_2026-10-06.md);
 - BSD tagged:    ``<ALGO> (<path>) = <hexdigest>``.
 
 Anything else (including GNU escaped lines starting with ``\\``) fails closed with
@@ -38,7 +41,8 @@ from brats_uncertainty.utils.paths import is_link, is_safe_relpath
 _CHUNK = 1 << 20
 _BY_LENGTH = {32: "md5", 40: "sha1", 64: "sha256", 128: "sha512"}
 _BSD_TAGS = {"MD5": "md5", "SHA1": "sha1", "SHA256": "sha256", "SHA512": "sha512"}
-_GNU = re.compile(r"^([0-9A-Fa-f]+) [ *](.+)$")
+# GNU (two spaces or " *") and the single-space TCIA form; the path never starts with a space
+_GNU = re.compile(r"^([0-9A-Fa-f]+) [ *]?([^ ].*)$")
 _BSD = re.compile(r"^(MD5|SHA1|SHA256|SHA512) \((.+)\) = ([0-9A-Fa-f]+)$")
 
 
@@ -103,7 +107,8 @@ def parse_checksum_file(path: str | Path) -> ChecksumFile:
         else:
             raise DataValidationError(
                 f"checksum line {lineno}: unrecognized format (supported: GNU '<digest>  <path>', "
-                "BSD 'ALGO (path) = digest'); extend the parser rather than guessing"
+                "single-space '<digest> <path>', BSD 'ALGO (path) = digest'); extend the parser "
+                "rather than guessing"
             )
         rel = _clean_path(rel, lineno)
         if rel in seen:

@@ -104,7 +104,8 @@ def test_demo_cannot_close_gates(demo_pair: tuple[Path, Path], tmp_path: Path) -
     from brats_uncertainty.evaluation.status import load_status, validate_status
 
     raw = load_status(REPO_ROOT).raw
-    running = apply_transition(raw, "B2", "RUNNING")
+    b2 = next(g for g in raw["gates"] if g["id"] == "B2")["status"]
+    running = raw if b2 == "RUNNING" else apply_transition(raw, "B2", "RUNNING")
     passed = apply_transition(
         running, "B2", "PASSED", evidence="results/demo/synthetic_summary.json", on="2026-10-05"
     )

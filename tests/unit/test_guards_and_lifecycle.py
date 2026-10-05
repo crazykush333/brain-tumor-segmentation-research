@@ -49,7 +49,10 @@ def test_current_status_matches_reported_state(repo_root: Path) -> None:
     assert all(st.gate(f"A{i}").status in ("CLOSED", "OWNER_WAIVED") for i in range(1, 10))
     assert st.gate("B1").status == "PASSED"  # owner-approved alternative (amendment v1.0-A1)
     assert st.gate("B1").evidence == "docs/data/B1_EVIDENCE_2026-10-01.md"
-    assert st.gate("B2").status == "AUTHORIZED"  # ready, not executed
+    assert st.gate("B2").status in (
+        "AUTHORIZED",
+        "RUNNING",
+    )  # authorized; RUNNING once the runner started it
     for gid in (f"C{i}" for i in range(1, 7)):
         assert st.gate(gid).status == "NOT_STARTED", gid
     # D1 (owner authorization of EXP-001, 2026-10-04) and D2 (B1 route) closed by the master run

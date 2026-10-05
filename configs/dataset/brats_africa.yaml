@@ -6,7 +6,7 @@ source:
   provider: "TCIA BraTS-Africa, Version 1 (updated 2024-09-04); DOI 10.7937/v8h6-8x67"
   licence: "CC BY 4.0 (processed release)"
   metadata_file: "BraTS-Africa_TCIA_datainfo_v2.xlsx"   # never committed
-  route: null
+  route: "Official TCIA BraTS-Africa download (DOI 10.7937/v8h6-8x67, processed release CC BY 4.0) into a private, access-restricted computational environment; amendment v1.0-A2"
 data_root_env: BRATS_AFRICA_DATA_ROOT
 
 inclusion:

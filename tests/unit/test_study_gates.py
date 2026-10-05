@@ -51,11 +51,13 @@ def _africa_tree(root: Path, ids: list[str], *, drop: dict[str, str] | None = No
 
 
 def test_africa_needs_an_approved_route() -> None:
-    with pytest.raises(ConfigError, match="no approved data route"):
-        require_route(AFRICA_CFG)
     cfg = copy.deepcopy(AFRICA_CFG)
+    cfg["source"]["route"] = None
+    with pytest.raises(ConfigError, match="no approved data route"):
+        require_route(cfg)
     cfg["source"]["route"] = "SYNTHETIC route"
     assert require_route(cfg) == "SYNTHETIC route"
+    assert "amendment v1.0-A2" in require_route(AFRICA_CFG)  # owner-approved route (C1)
 
 
 def test_africa_label_sequence_and_count_checks(tmp_path: Path) -> None:

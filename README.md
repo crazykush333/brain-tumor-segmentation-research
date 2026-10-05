@@ -21,7 +21,7 @@ Clinical MRI protocols are often incomplete: a contrast-enhanced T1, T2 or FLAIR
 
 ## Frozen protocol
 
-The authoritative definition of the study is **[docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md](docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md)** — frozen 2026-09-28 (`protocol-v1.0`), SHA-256 `704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811`, verified by `brats-uncertainty verify-protocol` and the regression tests. Changes are possible only through logged amendments; the one amendment so far (v1.0-A1) concerns the data route and changes no part of the scientific design.
+The authoritative definition of the study is **[docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md](docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md)** — frozen 2026-09-28 (`protocol-v1.0`), SHA-256 `704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811`, verified by `brats-uncertainty verify-protocol` and the regression tests. Changes are possible only through logged amendments; the two amendments so far (v1.0-A1, BraTS 2021 data route; v1.0-A2, BraTS-Africa data route) change no part of the scientific design.
 
 **Primary hypothesis (H-W).** On the internal test set, for the modality-dropout (arm B) ensemble, the equal-weight mean over the four single-missing conditions C4 = {−T1, −T1c, −T2, −FLAIR} of the within-condition ET ΔAURC_c = AURC_c(U1) − AURC_c(I) is below 0 (risk = 1 − ET Dice). H-W is supported if the patient-group bootstrap 95% CI lies entirely below 0.
 

@@ -529,7 +529,7 @@ def test_every_notebook_has_explicit_gate_or_stop_behaviour() -> None:
 
 
 def test_amendment_list_excludes_administrative_entries(repo_root: Path) -> None:
-    assert [a["id"] for a in list_amendments(repo_root)] == ["v1.0-A1"]
+    assert [a["id"] for a in list_amendments(repo_root)] == ["v1.0-A1", "v1.0-A2"]
     assert (
         repo_root / "docs/research/protocol-amendments/2026-10-01_compute-environment.md"
     ).is_file()

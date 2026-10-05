@@ -1,0 +1,43 @@
+{
+  "data_class": "REAL_RESEARCH_DATA",
+  "doi": "10.7937/jc8x-9874",
+  "file": {
+    "file_name": "UCSF-PDGM-metadata_v5.csv",
+    "sha256": "afc1c23a0eb0597b56e603741e72f2308b4860281187cd3808e05b7a0116fd78",
+    "size_bytes": 58149
+  },
+  "gate": "B4",
+  "kind": "ucsf_pdgm_metadata",
+  "path_reference": "private study storage/UCSF-PDGM-metadata_v5.csv",
+  "record_fingerprint": "152f814ec33a8ae8068c703bc7455b32275f09507823e2025fe82ab750fbaa8c",
+  "schema_version": 3,
+  "source_url": "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/",
+  "stamp": {
+    "code_commit": "c866ddcb74201db421dd06590a9aec1048ff313f",
+    "code_dirty": false,
+    "config_sha256": {},
+    "created_at": "2026-10-05T21:09:59.977166+00:00",
+    "environment": {
+      "cuda_available": true,
+      "cuda_version": "12.8",
+      "gpu": "Tesla T4",
+      "implementation": "CPython",
+      "machine": "x86_64",
+      "packages": {
+        "matplotlib": "3.10.0",
+        "nibabel": "5.4.2",
+        "nnunetv2": "unknown",
+        "numpy": "2.1.3",
+        "scipy": "1.16.3",
+        "torch": "2.11.0+cu128",
+        "yaml": "6.0.3"
+      },
+      "platform": "Linux-6.18.48+-x86_64-with-glibc2.39",
+      "python": "3.13.15"
+    },
+    "package_version": "0.1.0",
+    "protocol_sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
+    "protocol_version": "v1.0"
+  },
+  "synthetic": false
+}

@@ -1,0 +1,122 @@
+{
+  "overall": "NOT_RUN",
+  "reason": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+  "result_index": {},
+  "scientific_status": "NOT_RUN",
+  "stages": [
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "DATA",
+      "status": "NOT_RUN",
+      "title": "Data"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "SPLIT",
+      "status": "NOT_RUN",
+      "title": "Split"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "RUNS",
+      "status": "NOT_RUN",
+      "title": "Runs"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "CHECKPOINTS",
+      "status": "NOT_RUN",
+      "title": "Checkpoints"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "METRICS",
+      "status": "NOT_RUN",
+      "title": "Metrics"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "PRIMARY_AURC",
+      "status": "NOT_RUN",
+      "title": "Primary AURC"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "BOOTSTRAP",
+      "status": "NOT_RUN",
+      "title": "Bootstrap"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "THRESHOLDS",
+      "status": "NOT_RUN",
+      "title": "Thresholds"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "STATISTICS",
+      "status": "NOT_RUN",
+      "title": "Statistics"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "CALIBRATION",
+      "status": "NOT_RUN",
+      "title": "Calibration"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "FAILURES",
+      "status": "NOT_RUN",
+      "title": "Failure analysis"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "EXTERNAL",
+      "status": "NOT_RUN",
+      "title": "External sets"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "TABLES",
+      "status": "NOT_RUN",
+      "title": "Tables"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "FIGURES",
+      "status": "NOT_RUN",
+      "title": "Figures"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "LINEAGE",
+      "status": "NOT_RUN",
+      "title": "Lineage"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "REPRODUCIBILITY",
+      "status": "NOT_RUN",
+      "title": "Reproducibility rerun"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "CLEAN_ENV",
+      "status": "NOT_RUN",
+      "title": "Clean environment"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "WEBSITE",
+      "status": "NOT_RUN",
+      "title": "Website"
+    },
+    {
+      "detail": "No real scientific result exists: the pre-registered experiment has not been executed (the master run stops at gate B2 - no GPU environment holding the official BraTS 2021 data). Nothing has been verified and nothing is published.",
+      "id": "PUBLIC_EXPORT",
+      "status": "NOT_RUN",
+      "title": "Public export"
+    }
+  ]
+}

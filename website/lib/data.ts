@@ -132,10 +132,39 @@ export interface ResultArtifact {
   provenance: { git_commit: string; protocol_sha256: string; generated_at: string };
 }
 
+/** One independently verified value (results/verification/verification_manifest.json). */
+export interface VerifiedResult {
+  title: string;
+  dataset: string;
+  arm: string;
+  region: string;
+  condition: string;
+  metric: string;
+  analysis_id: string;
+  estimate: number;
+  ci_low?: number;
+  ci_high?: number;
+  p_value?: number;
+  holm_p?: number;
+  status?: string;
+  label?: string;
+}
+
+export interface Verification {
+  /** NOT_RUN | BLOCKED | VERIFIED (scientific stages). */
+  scientific_status: string;
+  overall: string;
+  generated_at: string | null;
+  certificate: string;
+  /** Non-empty only when the scientific stages are VERIFIED and results are published. */
+  result_index: Record<string, VerifiedResult>;
+}
+
 export interface Results {
   available: boolean;
   statement: string;
   artifacts: ResultArtifact[];
+  verification: Verification;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

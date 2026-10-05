@@ -413,6 +413,19 @@ def _cmd_master_run(root: Path, args: argparse.Namespace) -> int:
     return 2 if report.stops else 0
 
 
+def _cmd_verify_results(root: Path, args: argparse.Namespace) -> int:
+    from brats_uncertainty.verification.run import save_result, verify_results_command
+
+    res = verify_results_command(
+        root, Path(args.main_repo), Path(args.work_dir), Path(args.analysis_out), Path(args.out)
+    )
+    save_result(res, Path(args.out) / "verification_result.json")
+    print(f"scientific verification: {res.scientific_status}")
+    for sid, st in res.stages.items():
+        print(f"  {sid:<16} {st.status}")
+    return 0 if res.scientific_status == "VERIFIED" else 1
+
+
 def _cmd_demo(root: Path, args: argparse.Namespace) -> int:
     from brats_uncertainty.demo import generate_demo
 
@@ -657,6 +670,14 @@ def build_parser() -> argparse.ArgumentParser:
     mr.add_argument("--until", default=None, help="stop after this step id")
     mr.add_argument("--plan", action="store_true", help="show step statuses; execute nothing")
     mr.set_defaults(func=_cmd_master_run)
+    vr = sub.add_parser(
+        "verify-results", help="tagged: independent verification of the real analysis"
+    )
+    vr.add_argument("--main-repo", required=True)
+    vr.add_argument("--work-dir", required=True)
+    vr.add_argument("--analysis-out", required=True)
+    vr.add_argument("--out", required=True)
+    vr.set_defaults(func=_cmd_verify_results)
     dm = sub.add_parser(
         "demo", help="synthetic pipeline demonstration (NOT results); only results/demo/"
     )

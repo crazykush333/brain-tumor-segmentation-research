@@ -2,7 +2,7 @@
 
 > **SYNTHETIC DEMO — NOT REAL RESULTS.** Synthetic demonstration only — not a BraTS scientific result.
 >
-> demo=true · synthetic=true · scientific_result=false · seed 20261004 · generated 2026-10-04T19:31:27+00:00 · code commit `6a7e0af6ef0e` · code sha256 `1d0b377d213c417b…`
+> demo=true · synthetic=true · scientific_result=false · seed 20261004 · generated 2026-10-05T17:53:02+00:00 · code commit `eff42d622dfd` · code sha256 `2e8be058f70d636f…`
 
 This directory shows what the finished repository and website will look like once the pre-registered experiment has run. Everything here comes from deterministic synthetic toy volumes (`SYNTH_*` cases, seed 20261004) processed by the study's real metric, statistics and figure code. It is **not** a scientific-results directory.
 

@@ -42,7 +42,7 @@ The authoritative definition of the study is **[docs/research/FINAL_RESEARCH_PRO
 ## Architecture
 
 - **Models:** nnU-Net v2, 3d_fullres, region-based (WT/TC/ET), 250 epochs (150 only if SR1/SR6 require), seeds 0, 1, 2 per arm; 3-member mean ensembles; sliding window step 0.5, mirroring off, threshold 0.5.
-- **Package** (`src/brats_uncertainty`): data gates and manifests (`data/`), patient grouping and split (`grouping/`, `splitting/`), metrics and uncertainty (`metrics/`, `uncertainty/`), statistics (`statistics/`), evaluation pipeline (`study/`), compute probe and resumable jobs (`compute/`), master orchestration (`orchestration/`), research-gate guards (`evaluation/`), provenance-stamped results and website export (`results/`).
+- **Package** (`src/brats_uncertainty`): data gates and manifests (`data/`), patient grouping and split (`grouping/`, `splitting/`), metrics and uncertainty (`metrics/`, `uncertainty/`), statistics (`statistics/`), evaluation pipeline (`study/`), compute probe and resumable jobs (`compute/`), master orchestration (`orchestration/`), research-gate guards (`evaluation/`), provenance-stamped results and website export (`results/`), independent result verification (`verification/`).
 
 ## Dataset roles
 
@@ -73,7 +73,7 @@ configs/        protocol mirror, datasets, compute, experiments, evaluation
 data/           README only — raw data are never stored in Git
 docs/           frozen protocol, amendments, data and gate records, status, reproducibility
 experiments/    experiment metadata; launcher notebooks (experiments/kaggle, experiments/vm)
-results/        real-result status (status.json) and the synthetic demonstration (demo/)
+results/        real-result status (status.json), result verification evidence (verification/) and the synthetic demonstration (demo/)
 scripts/        thin gated entry points, including the master runner
 splits/         README only until the real split is created (IDs and hashes only)
 src/            the brats_uncertainty package
@@ -117,13 +117,17 @@ Raw BraTS data are **not** stored in Git. Official data are acquired separately 
 
 **Real BraTS scientific results: NOT YET AVAILABLE.** [`results/status.json`](results/status.json) reports `scientific_results_available: false`.
 
+### Independent result verification
+
+No scientific value is published until an independent recomputation reproduces it from lower-level evidence (voxel counts, unit rows, the canonical seed-12345 bootstrap resamples), and the tables, figures, website and public files are reconciled with it. The rules are in [`RESULT_VERIFICATION_PROTOCOL.md`](docs/research/execution/RESULT_VERIFICATION_PROTOCOL.md); the evidence is in [`results/verification/`](results/verification/). Current status: **NOT_RUN** (no real result exists yet; certificate BLOCKED).
+
 ### Demonstration
 
 A **synthetic** end-to-end demonstration shows how the result pipeline, statistics, figures and website will look once the real study is executed: [`results/demo/`](results/demo/). It is generated from deterministic synthetic toy volumes by the study's own code, every file is labelled `demo=true / synthetic=true / scientific_result=false`, and it is **not** a BraTS result and says nothing about the hypotheses.
 
 ## Website
 
-The research website (`website/`, Next.js static export) presents the question, design, reproducibility system, live gate status and the results page (real-results status plus the clearly labelled synthetic demonstration). All content is generated from the repository's sources of truth (`brats-uncertainty export-site-data`).
+The research website (`website/`, Next.js static export) presents the question, design, reproducibility system, live gate status the results page (real values only after independent verification) and a separate, clearly labelled synthetic pipeline demonstration page (`/demo/`). All content is generated from the repository's sources of truth (`brats-uncertainty export-site-data`).
 
 ## Citation
 

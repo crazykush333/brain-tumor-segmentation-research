@@ -7,6 +7,7 @@ const LINKS: [string, string][] = [
   ["/protocol/", "Protocol"],
   ["/experiments/", "Experiments"],
   ["/results/", "Results"],
+  ["/demo/", "Pipeline demo"],
   ["/reproducibility/", "Reproducibility"],
   ["/about/", "About"],
 ];
@@ -52,7 +53,7 @@ export function Footer() {
           <a href={repoUrl} className="underline">
             {repoUrl.replace("https://", "")}
           </a>
-          . Real scientific results are pending; demo figures are synthetic and labelled as such.
+          . Scientific values are shown only after independent result verification.
         </p>
       </div>
     </footer>

@@ -113,6 +113,75 @@ def _provenance(
     )
 
 
+def _groups_of(rows: Sequence[Mapping[str, str]]) -> list[str]:
+    return sorted({r["group_id"] for r in rows if r["region"] == "ET"})
+
+
+def write_bootstrap_artifacts(
+    out: Path,
+    sink: Mapping[str, Any],
+    internal: Mapping[str, Any],
+    transfers: Mapping[str, Mapping[str, Any]],
+    int_b: Sequence[Mapping[str, str]],
+    val_b: Sequence[Mapping[str, str]],
+    targets: Mapping[str, Sequence[Mapping[str, str]]],
+    n_replicates: int,
+    seed: int,
+) -> list[Path]:
+    """Production replicate statistics and the declared canonical resamples (seed 12345).
+
+    The resample index matrices themselves are regenerated from (seed, group order,
+    method) and identified by their SHA-256; the verifier must reproduce the digest.
+    """
+    import csv
+    import json
+
+    out.mkdir(parents=True, exist_ok=True)
+    written = []
+    blocks = {
+        "primary": [k for k in sink if k.startswith("ET:")],
+        "transfer_q080": [k for k in sink if not k.startswith("ET:")],
+    }
+    for name, keys in blocks.items():
+        if not keys:
+            continue
+        path = out / f"bootstrap_replicates_{name}.csv"
+        with path.open("w", encoding="utf-8", newline="") as fh:
+            w = csv.writer(fh, lineterminator="\n")
+            w.writerow(["replicate", *keys])
+            for b in range(n_replicates):
+                w.writerow([b, *(repr(float(sink[k][b])) for k in keys)])
+        written.append(path)
+    manifest = {
+        "seed": seed,
+        "n_replicates": n_replicates,
+        "unit": "patient group",
+        "method": "numpy.random.default_rng(seed).integers(0, G, size=(R, G)); row b lists the "
+        "drawn groups (indices into group_order) of replicate b",
+        "transfer_method": "one default_rng(seed); per replicate the validation groups are drawn "
+        "first (integers(0, G_v, size=G_v)), then the target groups",
+        "digest": "SHA-256 of the int64 little-endian matrix bytes (validation then target for "
+        "transfer)",
+        "primary": {
+            "dataset": "internal_test",
+            "group_order": _groups_of(int_b),
+            "draws_sha256": internal["primary_HW"]["draws_sha256"],
+        },
+        "transfer_q080": {
+            ds: {
+                "validation_group_order": _groups_of(val_b),
+                "target_group_order": _groups_of(t),
+                "draws_sha256": transfers[ds]["0.80"]["delta_risk"]["draws_sha256"],
+            }
+            for ds, t in targets.items()
+        },
+    }
+    path = out / f"bootstrap_resamples_seed{seed}.json"
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    written.append(path)
+    return written
+
+
 def analyze_study(
     *,
     units_dir: Path,
@@ -154,7 +223,8 @@ def analyze_study(
         synthetic=synthetic,
     )
     kw = {"n_replicates": n_replicates, "seed": seed}
-    internal = internal_analysis(int_b, int_a, frozen, rows_b_c15=c15, **kw)
+    sink: dict[str, Any] = {}
+    internal = internal_analysis(int_b, int_a, frozen, rows_b_c15=c15, sink=sink, **kw)
     externals = {
         ds: external_analysis(ds, r, frozen, **kw)
         for ds in ("upenn_hoi", "brats_africa")
@@ -164,7 +234,10 @@ def analyze_study(
         "internal_test": int_b,
         **{ds: r for ds in externals if (r := rows(ds, "B")) is not None},
     }
-    transfers = {ds: transfer_analysis(val_b, t, frozen, **kw) for ds, t in targets.items()}
+    transfers = {
+        ds: transfer_analysis(val_b, t, frozen, sink=sink, prefix=f"{ds}:", **kw)
+        for ds, t in targets.items()
+    }
     families = assemble_families(internal, externals, transfers) if len(externals) == 2 else None
     tau020 = float(frozen["tau_q"]["0.20"]["tau"])
     failures = {ds: categorize(t, tau020) for ds, t in targets.items()}
@@ -184,6 +257,9 @@ def analyze_study(
         artifact("families_F2_F3_F3b", "bootstrap_result", families)
     artifact(
         "failure_analysis", "report", {"categories": failures, "figure_cases_ids_only": fig_cases}
+    )
+    written += write_bootstrap_artifacts(
+        out_dir / "bootstrap", sink, internal, transfers, int_b, val_b, targets, n_replicates, seed
     )
     sidecar = {**prov.__dict__, "run_ids": list(run_ids)}
     written += figure_primary_forest(

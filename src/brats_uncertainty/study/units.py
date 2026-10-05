@@ -10,7 +10,12 @@ For each case, condition and region the row holds:
 - voxel counts and volumes; for ET the absolute volume error and the S5 binary
   volume failures at 40 % / 65 % (empty when GT ET < 1 mL);
 - ECE / Brier on the ensemble-mean probability within the protocol ROI (S4);
-- HD95 only from the evaluator pinned at gate C6 (empty until then; §4 S3).
+- HD95 only from the evaluator pinned at gate C6 (empty until then; §4 S3);
+- verification primitives (``verification`` package): the members' voxel counts, their
+  pairwise and GT intersections, the ensemble/GT intersection, and per-bin calibration
+  sums (count, sum p, sum y over the protocol ROI; 15 equal-width bins) plus the Brier
+  sum of squared errors, so Dice, U1, risk, volume errors, ECE and Brier can be recomputed
+  independently without storing any probability map (§17).
 
 No metric is computed against labels for EXP-001 (D4): this module is used only
 for validation, test and external evaluation.
@@ -67,7 +72,14 @@ UNIT_FIELDS = (
     "brier",
     "roi_voxels",
     "hd95",
+    "member_voxels",
+    "member_pair_intersections",
+    "member_gt_intersections",
+    "ensemble_gt_intersection",
+    "calibration_bins",
+    "brier_sse",
 )
+CAL_BINS = 15
 Hd95Fn = Callable[[NDArray[np.bool_], NDArray[np.bool_], tuple[float, float, float]], float]
 
 
@@ -79,6 +91,44 @@ def _fmt(v: Any) -> str:
     if isinstance(v, float):
         return "" if math.isnan(v) else repr(v)
     return str(v)
+
+
+def _join(values: Sequence[Any]) -> str:
+    return ";".join(repr(v) if isinstance(v, float) else str(v) for v in values)
+
+
+def verification_primitives(
+    member_masks: Sequence[NDArray[np.bool_]],
+    pred: NDArray[np.bool_],
+    gt: NDArray[np.bool_],
+    mean: NDArray[np.floating],
+) -> dict[str, str]:
+    """Counts and sums from which the verifier recomputes the unit's metrics."""
+    from brats_uncertainty.metrics.calibration import calibration_roi
+
+    vox = [int(np.count_nonzero(m)) for m in member_masks]
+    pairs = [
+        int(np.count_nonzero(member_masks[a] & member_masks[b]))
+        for a, b in ((0, 1), (0, 2), (1, 2))
+    ]
+    mgt = [int(np.count_nonzero(m & gt)) for m in member_masks]
+    roi = calibration_roi(gt, pred)
+    p = np.asarray(mean, dtype=np.float64)[roi]
+    y = np.asarray(gt, dtype=bool)[roi]
+    # bin b holds edge_b <= p < edge_(b+1) (last bin closed), via the interior edges
+    idx = np.searchsorted(np.linspace(0.0, 1.0, CAL_BINS + 1)[1:-1], p, side="right")
+    bins = []
+    for b in range(CAL_BINS):
+        sel = idx == b
+        bins.append(f"{int(sel.sum())}:{float(p[sel].sum())!r}:{int(y[sel].sum())}")
+    return {
+        "member_voxels": _join(vox),
+        "member_pair_intersections": _join(pairs),
+        "member_gt_intersections": _join(mgt),
+        "ensemble_gt_intersection": str(int(np.count_nonzero(pred & gt))),
+        "calibration_bins": ";".join(bins),
+        "brier_sse": repr(float(np.sum((p - y.astype(np.float64)) ** 2))),
+    }
 
 
 def unit_rows(
@@ -138,6 +188,7 @@ def unit_rows(
             "roi_voxels": int(cal["roi_voxels"]),
             "hd95": None if hd95 is None else float(hd95(pred, g, spacing_mm)),
         }
+        row.update(verification_primitives([binarize(x) for x in probs], pred, g, mean))
         if region == "ET":
             row["abs_vol_err_ml"] = abs(pred_vox - gt_vox) * voxel_ml
             row["vol_fail_40"] = volume_failure_from_counts(

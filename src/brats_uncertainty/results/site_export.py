@@ -55,6 +55,43 @@ def _results(root: Path, status_raw: dict[str, Any]) -> dict[str, Any]:
         "available": available,
         "statement": status_raw["results"].get("statement", NO_RESULTS_STATEMENT),
         "artifacts": artifacts,
+        "verification": verification_state(root, available=available),
+    }
+
+
+VERIFICATION_MANIFEST = Path("results/verification/verification_manifest.json")
+VERIFICATION_CERTIFICATE = "results/verification/RESULT_VERIFICATION_CERTIFICATE.md"
+
+
+def verification_state(root: Path, *, available: bool) -> dict[str, Any]:
+    """Independent-verification state for the website.
+
+    Scientific values reach the Results page only through ``result_index``, which is
+    non-empty only when the independent verification of the scientific stages is
+    VERIFIED and the results are published. Publishing unverified results is refused.
+    """
+    path = root / VERIFICATION_MANIFEST
+    manifest: dict[str, Any] = (
+        json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    )
+    scientific = str(manifest.get("scientific_status", "NOT_RUN"))
+    index = manifest.get("result_index") or {}
+    verified = scientific == "VERIFIED"
+    if available and not verified:
+        raise ProvenanceError(
+            "results.available is true but the independent verification is "
+            f"{scientific} (results/verification/verification_manifest.json)"
+        )
+    if verified and not index:
+        raise ProvenanceError("verification is VERIFIED but its result index is empty")
+    if not verified and index:
+        raise ProvenanceError("an unverified verification manifest lists result values")
+    return {
+        "scientific_status": scientific,
+        "overall": str(manifest.get("overall", "NOT_RUN")),
+        "generated_at": manifest.get("generated_at"),
+        "certificate": VERIFICATION_CERTIFICATE,
+        "result_index": index if (verified and available) else {},
     }
 
 

@@ -174,7 +174,14 @@ def test_site_states_real_pending_and_demo(demo_pair: tuple[Path, Path], tmp_pat
 
 
 def test_website_results_page_renders_both_states() -> None:
+    """The Results page never shows synthetic content; the demo has its own page."""
     page = (REPO_ROOT / "website/app/results/page.tsx").read_text(encoding="utf-8")
     assert "Results pending real experimental execution." in page
-    assert "Synthetic Results Demonstration" in page
-    assert "NOT SCIENTIFIC RESULT" in page and "View demo artifacts" in page
+    assert "Scientific results are being independently verified." in page
+    assert "Verified result ID:" in page and "data-result-id" in page
+    assert "demo" not in page.lower() and "synthetic" not in page.lower()
+    demo_page = (REPO_ROOT / "website/app/demo/page.tsx").read_text(encoding="utf-8")
+    assert "Synthetic Results Demonstration" in demo_page
+    assert "NOT SCIENTIFIC RESULT" in demo_page and "View demo artifacts" in demo_page
+    nav = (REPO_ROOT / "website/components/Nav.tsx").read_text(encoding="utf-8")
+    assert "synthetic" not in nav.lower()  # rendered on the Results page too

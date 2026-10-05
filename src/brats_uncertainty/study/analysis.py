@@ -162,11 +162,25 @@ def lexicographic_score(
 
 
 # ------------------------------------------------------------------ per-set blocks
+ReplicateSink = dict[str, NDArray[np.float64]]
+
+
 def delta_aurc_block(
-    rows_b: Sequence[Mapping[str, str]], region: str, n: int, seed: int, *, with_bca: bool = False
+    rows_b: Sequence[Mapping[str, str]],
+    region: str,
+    n: int,
+    seed: int,
+    *,
+    with_bca: bool = False,
+    sink: ReplicateSink | None = None,
+    prefix: str = "",
 ) -> dict[str, Any]:
     t = unit_table(rows_b, region, C5_NAMES)
     res = run_primary(t, n_replicates=n, seed=seed)
+    if sink is not None:  # production replicates, compared one by one by the verifier
+        sink[f"{prefix}mean_c4"] = res.mean_c4.replicates
+        for c, r in res.per_condition.items():
+            sink[f"{prefix}{c}"] = r.replicates
     out: dict[str, Any] = {
         "mean_c4": res.mean_c4.as_dict(),
         "per_condition": {c: r.as_dict() for c, r in res.per_condition.items()},
@@ -327,9 +341,10 @@ def internal_analysis(
     rows_b_c15: Sequence[Mapping[str, str]] | None = None,
     n_replicates: int = PROTOCOL_REPLICATES,
     seed: int = PROTOCOL_SEED,
+    sink: ReplicateSink | None = None,
 ) -> dict[str, Any]:
     n = n_replicates
-    primary = delta_aurc_block(rows_b, "ET", n, seed, with_bca=True)
+    primary = delta_aurc_block(rows_b, "ET", n, seed, with_bca=True, sink=sink, prefix="ET:")
     f1_p = {c: primary["per_condition"][c]["p_value_two_sided_approx"] for c in C4_NAMES}
     f1_adj = holm_family("F1", f1_p)
     s2 = {r: delta_aurc_block(rows_b, r, n, seed)["mean_c4"] for r in ("TC", "WT")}
@@ -409,6 +424,8 @@ def transfer_analysis(
     *,
     n_replicates: int = PROTOCOL_REPLICATES,
     seed: int = PROTOCOL_SEED,
+    sink: ReplicateSink | None = None,
+    prefix: str = "",
 ) -> dict[str, Any]:
     """S7 for one target set: q = 0.80 (F3/F3b) and 0.70 / 0.90 (sensitivity)."""
     v = unit_table(validation_b, "ET", C4_NAMES)
@@ -422,6 +439,9 @@ def transfer_analysis(
             realized_coverage=float(fr["realized_validation_coverage"]),
         )
         res = threshold_transfer(v, t, tau, n_replicates=n_replicates, seed=seed)
+        if sink is not None and q == "0.80":
+            sink[f"{prefix}delta_risk"] = res.delta_risk.replicates
+            sink[f"{prefix}delta_coverage"] = res.delta_coverage.replicates
         out[q] = {
             "tau": tau.tau,
             "validation_coverage": res.validation_coverage,

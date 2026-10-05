@@ -63,7 +63,7 @@ export default function HomePage() {
         <StatusCard
           title="Real scientific results"
           value={rs.scientific_results_available ? "AVAILABLE" : "PENDING"}
-          detail="Appear only after the pre-registered experiment has been executed."
+          detail="Shown only after the pre-registered experiment has run and every result passed independent verification."
         />
         <StatusCard
           title="Experiment readiness"

@@ -593,7 +593,7 @@ def eval_worktree(ctx: Context) -> Path:
     return wt
 
 
-def _tagged_cli(ctx: Context, args: list[str]) -> None:
+def _tagged_cli(ctx: Context, args: list[str], *, allow_fail: bool = False) -> None:
     import sys
 
     wt = eval_worktree(ctx)
@@ -603,7 +603,7 @@ def _tagged_cli(ctx: Context, args: list[str]) -> None:
         cwd=wt,
         env=env,
     )
-    if code != 0:
+    if code != 0 and not allow_fail:
         raise StepBlocked(
             f"tagged command failed ({code}): {' '.join(args[:2])}",
             "inspect its output (gates, ledger, inputs); re-run --resume",
@@ -649,13 +649,16 @@ def evaluation_executor(dataset: str) -> Callable[[Context], Outcome]:
     return execute
 
 
+ANALYSIS_OUT = Path("eval") / "analysis"
+VERIFICATION_DIR = Path("results/verification")
+VERIFICATION_REPORT = Path("docs/research/execution/RESULT_VERIFICATION_REPORT.md")
+
+
 def execute_statistics(ctx: Context) -> Outcome:
-    index = ctx.repo_root / "results" / "index.json"
-    if index.is_file():
-        return Outcome(
-            PASSED, "statistics, figures and tables published", evidence=[ctx.rel(index)]
-        )
-    out = ctx.work_dir / "eval" / "analysis"
+    """All pre-registered analyses, into private storage. Nothing is published here."""
+    out = ctx.work_dir / ANALYSIS_OUT
+    if (out / "analysis" / "internal_test_analysis.json").is_file():
+        return Outcome(PASSED, "analyses computed (awaiting independent verification)")
     _tagged_cli(
         ctx,
         [
@@ -672,16 +675,78 @@ def execute_statistics(ctx: Context) -> Outcome:
             str(ctx.work_dir),
         ],
     )
-    from brats_uncertainty.results.export import export_public_artifacts
+    return Outcome(PASSED, "analyses computed (awaiting independent verification)")
 
-    rep = export_public_artifacts(out, ctx.repo_root / "results" / "public-safe")
-    if rep.skipped:
-        raise StepFailed(
-            f"export refused files: {rep.skipped[:5]}",
-            "nothing is published until every file is public-safe",
+
+def blocked_report(result: Any) -> str:
+    """BLOCKED RESULT / RESULT ID / EXACT DISCREPANCY / AFFECTED ARTIFACTS / REQUIRED RERUN."""
+    from brats_uncertainty.verification.model import FAIL, NOT_PERFORMED
+
+    lines = []
+    for st in result.stages.values():
+        for c in st.checks:
+            if c.status in (FAIL, NOT_PERFORMED):
+                ids = ", ".join(sorted(result.result_index)) or "all"
+                lines.append(
+                    f"BLOCKED RESULT: {st.id} | RESULT ID: {ids} | EXACT DISCREPANCY: {c.name}: "
+                    f"production {c.production!r} vs recomputed {c.recomputed!r} "
+                    f"({c.status}; {c.detail}) | AFFECTED ARTIFACTS: analysis outputs of stage "
+                    f"{st.id} | REQUIRED RERUN: fix the cause, rerun the {st.id} producer, "
+                    "re-verify"
+                )
+    return "\n".join(lines[:20])
+
+
+def execute_verify(ctx: Context) -> Outcome:
+    """Independent verification; publish to the working tree only if VERIFIED."""
+    from brats_uncertainty.results.export import export_public_artifacts
+    from brats_uncertainty.verification.run import load_result
+    from brats_uncertainty.verification.verify import write_outputs
+
+    work_ver = ctx.work_dir / "verification"
+    result_path = work_ver / "verification_result.json"
+    if not result_path.is_file():
+        _tagged_cli(
+            ctx,
+            [
+                "verify-results",
+                "--main-repo",
+                str(ctx.repo_root),
+                "--work-dir",
+                str(ctx.work_dir),
+                "--analysis-out",
+                str(ctx.work_dir / ANALYSIS_OUT),
+                "--out",
+                str(work_ver),
+            ],
+            allow_fail=True,
         )
-    arts = sorted((ctx.repo_root / "results/public-safe/analysis").glob("*.json"))
-    write_json(index, {"artifacts": [ctx.rel(a) for a in arts]})
+    if not result_path.is_file():
+        raise StepBlocked(
+            "verification did not produce a result", "inspect the verify-results output"
+        )
+    result = load_result(result_path)
+    if result.scientific_status != "VERIFIED":
+        write_outputs(
+            result, ctx.repo_root / VERIFICATION_DIR, ctx.repo_root / VERIFICATION_REPORT, {}
+        )
+        ctx.ops.milestone("docs(verification): verification BLOCKED - nothing published")
+        raise StepFailed(
+            "independent verification BLOCKED publication",
+            blocked_report(result) or "see results/verification/RESULT_VERIFICATION_REPORT",
+        )
+    dest = ctx.repo_root / "results" / "public-safe"
+    if not (dest / "analysis" / "internal_test_analysis.json").is_file():
+        rep = export_public_artifacts(ctx.work_dir / ANALYSIS_OUT, dest)
+        if rep.skipped:
+            raise StepFailed(f"export refused files: {rep.skipped[:5]}", "nothing is published")
+    write_outputs(result, ctx.repo_root / VERIFICATION_DIR, ctx.repo_root / VERIFICATION_REPORT, {})
+    arts = sorted((dest / "analysis").glob("*.json"))
+    write_json(
+        ctx.repo_root / "results" / "index.json",
+        {"artifacts": [ctx.rel(a) for a in arts]},
+        overwrite=True,
+    )
     for section in ("internal", "external"):
         _set_status(ctx, {("evaluation", section): "COMPLETED"})
     _set_status(
@@ -690,16 +755,47 @@ def execute_statistics(ctx: Context) -> Outcome:
             ("results", "status"): "AVAILABLE",
             ("results", "available"): True,
             ("results", "evidence"): "results/index.json",
-            ("results", "statement"): "Results of the pre-registered analyses are available "
-            "(generated from the eval-v1 evaluation; see results/index.json).",
+            ("results", "statement"): "Independently verified results of the pre-registered "
+            "analyses (results/verification/RESULT_VERIFICATION_CERTIFICATE.md).",
         },
-        message="data(results): pre-registered analyses, figures and tables",
     )
-    return Outcome(PASSED, "statistics, figures and tables published", evidence=[ctx.rel(index)])
+    return Outcome(PASSED, "scientific results independently VERIFIED (publication checks follow)")
+
+
+def published_files(repo_root: Path) -> list[Path]:
+    roots = [
+        repo_root / "results/public-safe",
+        repo_root / "results/MAIN",
+        repo_root / "results/EXP-001",
+    ]
+    files = [p for r in roots if r.is_dir() for p in r.rglob("*") if p.is_file()]
+    return [*files, repo_root / "results/index.json"]
+
+
+def retract(ctx: Context) -> None:
+    """Undo an unverified publication in the working tree (nothing was committed)."""
+    shutil.rmtree(ctx.repo_root / "results/public-safe", ignore_errors=True)
+    (ctx.repo_root / "results/index.json").unlink(missing_ok=True)
+    _set_status(
+        ctx,
+        {
+            ("results", "status"): "UNAVAILABLE",
+            ("results", "available"): False,
+            ("results", "evidence"): None,
+            ("results", "statement"): "Scientific results are being independently verified.",
+        },
+    )
 
 
 def execute_website(ctx: Context) -> Outcome:
+    """Build the site, reconcile the rendered Results page and the public files, certify."""
     from brats_uncertainty.results.site_export import export_site_data
+    from brats_uncertainty.verification.run import load_result
+    from brats_uncertainty.verification.verify import (
+        check_public_export,
+        check_website,
+        write_outputs,
+    )
 
     export_site_data(ctx.repo_root)
     site = ctx.repo_root / "website"
@@ -709,12 +805,32 @@ def execute_website(ctx: Context) -> Outcome:
             "website: npm not available in this environment",
             "install Node.js >= 20; re-run --resume",
         )
-    code = ctx.ops.run([npm, "run", "build"], cwd=site)
-    if code != 0:
-        raise StepBlocked(
-            f"website production build failed ({code})", "fix the build error; re-run --resume"
+    if ctx.ops.run([npm, "run", "build"], cwd=site) != 0:
+        raise StepBlocked("website production build failed", "fix the build error; re-run --resume")
+    result_path = ctx.work_dir / "verification" / "verification_result.json"
+    if result_path.is_file():
+        result = load_result(result_path)
+        page = (site / "out" / "results" / "index.html").read_text(encoding="utf-8")
+        result.stages["WEBSITE"] = check_website(page, result)
+        result.stages["PUBLIC_EXPORT"], hashes = check_public_export(
+            published_files(ctx.repo_root), ctx.repo_root
         )
-    ctx.ops.milestone("chore(website): data synchronized from public-safe artifacts")
+        write_outputs(
+            result, ctx.repo_root / VERIFICATION_DIR, ctx.repo_root / VERIFICATION_REPORT, hashes
+        )
+        if result.overall != "VERIFIED":
+            retract(ctx)
+            write_outputs(
+                result,
+                ctx.repo_root / VERIFICATION_DIR,
+                ctx.repo_root / VERIFICATION_REPORT,
+                hashes,
+            )
+            export_site_data(ctx.repo_root)
+            ctx.ops.milestone("docs(verification): publication checks BLOCKED - results retracted")
+            raise StepFailed("publication checks failed; results retracted", blocked_report(result))
+    export_site_data(ctx.repo_root)
+    ctx.ops.milestone("data(results): independently verified results, website data and certificate")
     deployed = (
         "not deployed: no deployment credentials in this environment "
         "(NETLIFY_AUTH_TOKEN / VERCEL_TOKEN)"
@@ -723,4 +839,6 @@ def execute_website(ctx: Context) -> Outcome:
         npx = shutil.which("npx") or "npx"
         if ctx.ops.run([npx, "netlify", "deploy", "--prod", "--dir", "out"], cwd=site) == 0:
             deployed = "deployed to Netlify (production)"
-    return Outcome(PASSED, f"website built; {deployed}", details={"deployment": deployed})
+    return Outcome(
+        PASSED, f"website built and reconciled; {deployed}", details={"deployment": deployed}
+    )

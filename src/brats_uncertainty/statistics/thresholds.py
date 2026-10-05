@@ -32,6 +32,8 @@ from brats_uncertainty.statistics.bootstrap import (
     PROTOCOL_SEED,
     BootstrapResult,
     GroupIndex,
+    canonical_transfer_draws,
+    draws_sha256,
     percentile_ci,
     two_sided_p,
 )
@@ -67,7 +69,19 @@ def weighted_coverage_risk(
     u, r, c = u1[keep], risk[keep], condition[keep]
     w = _c4_weights(c, conditions)
     acc = u >= tau
-    cov = float(w[acc].sum() / w.sum())
+    # coverage is a rational number (mean over conditions of k_c / n_c): computed exactly,
+    # so equal coverages are bitwise equal and a zero Delta-coverage is exactly 0 (this
+    # matters for the >= 0 / <= 0 counts of the bootstrap p-value; REPRODUCIBILITY §4 #11)
+    cov = float(
+        sum(
+            (
+                Fraction(int(np.sum(acc & (c == name))), int(np.sum(c == name)))
+                for name in conditions
+            ),
+            Fraction(0),
+        )
+        / len(conditions)
+    )
     sel_risk = float((w[acc] * r[acc]).sum() / w[acc].sum()) if acc.any() else float("nan")
     return cov, sel_risk
 
@@ -139,12 +153,13 @@ def threshold_transfer(
     t_cov, t_risk = stats(target, t_all)
     gv = GroupIndex(validation.group_id)
     gt = GroupIndex(target.group_id)
-    rng = np.random.default_rng(seed)
+    dv, dt = canonical_transfer_draws(len(gv), len(gt), n_replicates, seed)
+    digest = draws_sha256(dv, dt)
     d_risk = np.empty(n_replicates)
     d_cov = np.empty(n_replicates)
     for b in range(n_replicates):
-        vc, vr = stats(validation, gv.resample(rng))
-        tc, tr = stats(target, gt.resample(rng))
+        vc, vr = stats(validation, gv.from_draw(dv[b]))
+        tc, tr = stats(target, gt.from_draw(dt[b]))
         d_risk[b] = tr - vr
         d_cov[b] = tc - vc
 
@@ -159,6 +174,7 @@ def threshold_transfer(
             n_replicates=n_replicates,
             n_undefined=int(np.sum(~np.isfinite(reps))),
             seed=seed,
+            draws_sha256=digest,
         )
 
     return TransferResult(

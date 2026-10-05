@@ -1,5 +1,12 @@
 {
   "artifacts": [],
   "available": false,
-  "statement": "Scientific results are not yet available. Experimental execution is pending."
+  "statement": "Scientific results are not yet available. Experimental execution is pending.",
+  "verification": {
+    "certificate": "results/verification/RESULT_VERIFICATION_CERTIFICATE.md",
+    "generated_at": null,
+    "overall": "NOT_RUN",
+    "result_index": {},
+    "scientific_status": "NOT_RUN"
+  }
 }

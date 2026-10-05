@@ -24,6 +24,24 @@ def _sidecar(path: Path, provenance: Mapping[str, Any]) -> None:
     write_json(path.with_name(path.name + ".provenance.json"), dict(provenance), overwrite=True)
 
 
+def write_source_csv(stem: Path, fields: Sequence[str], rows: Sequence[Mapping[str, Any]]) -> Path:
+    """The exact data a figure plots (full precision); the verifier reconciles it."""
+    stem.parent.mkdir(parents=True, exist_ok=True)
+    path = stem.with_suffix(".csv")
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(fields), lineterminator="\n")
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: (repr(v) if isinstance(v, float) else v) for k, v in r.items()})
+    return path
+
+
+def _with_source(provenance: Mapping[str, Any], source: Path) -> dict[str, Any]:
+    from brats_uncertainty.utils.hashing import sha256_file
+
+    return {**provenance, "source_data": source.name, "source_data_sha256": sha256_file(source)}
+
+
 def _both(fig_fn: Any, stem: Path, provenance: Mapping[str, Any], **kw: Any) -> list[Path]:
     out = []
     for ext in ("png", "svg"):
@@ -42,14 +60,23 @@ def figure_primary_forest(
         est["Full (control)"] = (full["estimate"], full["ci_low"], full["ci_high"])
     p = internal["primary_HW"]
     est["Mean over C4 (H-W)"] = (p["estimate"], p["ci_low"], p["ci_high"])
-    return _both(
-        plot_delta_aurc_forest,
+    source = write_source_csv(
         stem,
-        provenance,
-        estimates=est,
-        synthetic=synthetic,
-        order=[*C4_NAMES, "Full (control)", "Mean over C4 (H-W)"] if full else None,
+        ("label", "estimate", "ci_low", "ci_high"),
+        [{"label": k, "estimate": v[0], "ci_low": v[1], "ci_high": v[2]} for k, v in est.items()],
     )
+    provenance = _with_source(provenance, source)
+    return [
+        source,
+        *_both(
+            plot_delta_aurc_forest,
+            stem,
+            provenance,
+            estimates=est,
+            synthetic=synthetic,
+            order=[*C4_NAMES, "Full (control)", "Mean over C4 (H-W)"] if full else None,
+        ),
+    ]
 
 
 def figure_risk_coverage(
@@ -60,24 +87,43 @@ def figure_risk_coverage(
     synthetic: bool,
     title: str,
 ) -> list[Path]:
+    series = []
+    for cond in C4_NAMES:
+        sel = [r for r in rows_b if r["region"] == "ET" and r["condition"] == cond]
+        c = risk_coverage_curve(
+            np.asarray([float(r["U1"]) for r in sel]), np.asarray([float(r["risk"]) for r in sel])
+        )
+        for k in range(c.coverage.size):
+            series.append(
+                {
+                    "condition": cond,
+                    "k": k + 1,
+                    "coverage": float(c.coverage[k]),
+                    "selective_risk": float(c.selective_risk[k]),
+                    "confidence": float(c.confidence[k]),
+                }
+            )
+    source = write_source_csv(
+        stem, ("condition", "k", "coverage", "selective_risk", "confidence"), series
+    )
+    provenance = _with_source(provenance, source)
+
     def draw(path: Path) -> Path:
         plt = _plt()
         fig, axes = plt.subplots(1, len(C4_NAMES), figsize=(4 * len(C4_NAMES), 3.6), sharey=True)
         for ax, cond in zip(np.atleast_1d(axes), C4_NAMES, strict=True):
-            sel = [r for r in rows_b if r["region"] == "ET" and r["condition"] == cond]
-            u1 = np.asarray([float(r["U1"]) for r in sel])
-            risk = np.asarray([float(r["risk"]) for r in sel])
-            c = risk_coverage_curve(u1, risk)
-            ax.plot(c.coverage, c.selective_risk, label="U1")
-            ax.axhline(float(risk.mean()), color="grey", ls="--", lw=1, label="I (random ranking)")
-            ax.set_title(f"{cond} (n={len(sel)})")
+            pts = [s for s in series if s["condition"] == cond]  # plotted from the source data
+            ax.plot([s["coverage"] for s in pts], [s["selective_risk"] for s in pts], label="U1")
+            mean_risk = pts[-1]["selective_risk"]  # full coverage = mean risk = AURC of I
+            ax.axhline(mean_risk, color="grey", ls="--", lw=1, label="I (random ranking)")
+            ax.set_title(f"{cond} (n={len(pts)})")
             ax.set_xlabel("Coverage")
         np.atleast_1d(axes)[0].set_ylabel("Selective risk (1 - ET Dice)")
         np.atleast_1d(axes)[0].legend(frameon=False)
         fig.suptitle(title)
         return _finish(fig, path, synthetic)
 
-    out = []
+    out: list[Path] = [source]
     for ext in ("png", "svg"):
         p = draw(stem.with_suffix(f".{ext}"))
         _sidecar(p, provenance)
@@ -92,6 +138,20 @@ def figure_transfer(
     *,
     synthetic: bool,
 ) -> list[Path]:
+    rows = [
+        {
+            "dataset": n,
+            "quantity": key,
+            "estimate": transfers[n]["0.80"][key]["estimate"],
+            "ci_low": transfers[n]["0.80"][key]["ci_low"],
+            "ci_high": transfers[n]["0.80"][key]["ci_high"],
+        }
+        for n in transfers
+        for key in ("delta_risk", "delta_coverage")
+    ]
+    source = write_source_csv(stem, ("dataset", "quantity", "estimate", "ci_low", "ci_high"), rows)
+    provenance = _with_source(provenance, source)
+
     def draw(path: Path) -> Path:
         plt = _plt()
         fig, axes = plt.subplots(1, 2, figsize=(9, 3.2))
@@ -115,7 +175,7 @@ def figure_transfer(
             ax.set_xlabel(f"{label} at tau_0.80")
         return _finish(fig, path, synthetic)
 
-    out = []
+    out: list[Path] = [source]
     for ext in ("png", "svg"):
         p = draw(stem.with_suffix(f".{ext}"))
         _sidecar(p, provenance)

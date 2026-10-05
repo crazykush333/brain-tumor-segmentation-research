@@ -11,10 +11,16 @@
   into run metadata.]
 - Replicates where the statistic is undefined (NaN) are counted and excluded;
   the count is always reported.
+- Canonical resamples: the complete (replicates x groups) index matrix is generated once
+  by ``canonical_draws`` (``Generator.integers(0, G, size=(R, G))``, identical to drawing
+  replicate by replicate) and identified by ``draws_sha256`` (SHA-256 of its int64
+  little-endian bytes). The production analysis and the independent verifier use these
+  exact resamples; the digest is recorded with every bootstrap result.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
@@ -50,8 +56,41 @@ class GroupIndex:
         draw = rng.integers(0, len(self.groups), size=len(self.groups))
         return np.concatenate([self.members[g] for g in draw])
 
+    def from_draw(self, draw: NDArray[np.int64]) -> NDArray[np.intp]:
+        """Unit indices of one resample (a row of the canonical draw matrix)."""
+        return np.concatenate([self.members[g] for g in draw])
+
     def leave_one_out(self, g: int) -> NDArray[np.intp]:
         return np.concatenate([m for i, m in enumerate(self.members) if i != g])
+
+
+def canonical_draws(n_groups: int, n_replicates: int, seed: int) -> NDArray[np.int64]:
+    """The declared resample index matrix: row b = the groups (sorted order) drawn in b."""
+    if n_groups < 1 or n_replicates < 1:
+        raise ValueError("n_groups and n_replicates must be >= 1")
+    rng = np.random.default_rng(seed)
+    return np.asarray(rng.integers(0, n_groups, size=(n_replicates, n_groups)), dtype=np.int64)
+
+
+def canonical_transfer_draws(
+    n_validation_groups: int, n_target_groups: int, n_replicates: int, seed: int
+) -> tuple[NDArray[np.int64], NDArray[np.int64]]:
+    """Independent validation/target resamples from one generator (validation first, per
+    replicate), as used by the S7 threshold-transfer bootstrap."""
+    rng = np.random.default_rng(seed)
+    v = np.empty((n_replicates, n_validation_groups), dtype=np.int64)
+    t = np.empty((n_replicates, n_target_groups), dtype=np.int64)
+    for b in range(n_replicates):
+        v[b] = rng.integers(0, n_validation_groups, size=n_validation_groups)
+        t[b] = rng.integers(0, n_target_groups, size=n_target_groups)
+    return v, t
+
+
+def draws_sha256(*draws: NDArray[np.int64]) -> str:
+    h = hashlib.sha256()
+    for d in draws:
+        h.update(np.ascontiguousarray(d, dtype="<i8").tobytes())
+    return h.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -65,6 +104,7 @@ class BootstrapResult:
     n_undefined: int
     seed: int
     ci_method: str = "percentile"
+    draws_sha256: str = ""
 
     def as_dict(self) -> dict[str, float | int | str]:
         return {
@@ -76,6 +116,7 @@ class BootstrapResult:
             "n_undefined": self.n_undefined,
             "seed": self.seed,
             "ci_method": self.ci_method,
+            "draws_sha256": self.draws_sha256,
         }
 
 
@@ -134,11 +175,11 @@ def group_bootstrap(
     """Percentile bootstrap of ``statistic(unit_indices)`` over patient groups."""
     if n_replicates < 1:
         raise ValueError("n_replicates must be >= 1")
-    rng = np.random.default_rng(seed)
+    draws = canonical_draws(len(groups), n_replicates, seed)
     estimate = float(statistic(groups.all_indices()))
     reps = np.empty(n_replicates, dtype=np.float64)
     for b in range(n_replicates):
-        reps[b] = statistic(groups.resample(rng))
+        reps[b] = statistic(groups.from_draw(draws[b]))
     lo, hi = percentile_ci(reps, level)
     return BootstrapResult(
         estimate=estimate,
@@ -149,6 +190,7 @@ def group_bootstrap(
         n_replicates=n_replicates,
         n_undefined=int(np.sum(~np.isfinite(reps))),
         seed=seed,
+        draws_sha256=draws_sha256(draws),
     )
 
 

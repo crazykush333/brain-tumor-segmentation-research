@@ -117,7 +117,8 @@ def test_readme_status_line_matches_status_file(repo_root: Path) -> None:
 
 def test_no_numeric_results_in_results_tree(repo_root: Path) -> None:
     """Until results.available, results/ holds only README.md, the generated status.json
-    (which declares that no results exist) and the flagged synthetic demonstration."""
+    (which declares that no results exist), the flagged synthetic demonstration and the
+    pending (NOT_RUN, value-free) verification evidence."""
     import json
 
     from brats_uncertainty.demo import is_demo_artifact
@@ -131,6 +132,12 @@ def test_no_numeric_results_in_results_tree(repo_root: Path) -> None:
         rel = p.relative_to(repo_root).as_posix()
         if rel == "results/README.md":
             assert "No real scientific results are available" in p.read_text(encoding="utf-8")
+        elif rel == "results/verification/verification_manifest.json":
+            body = json.loads(p.read_text(encoding="utf-8"))
+            assert body["scientific_status"] != "VERIFIED" and body["result_index"] == {}
+        elif rel.startswith("results/verification/"):
+            text = p.read_text(encoding="utf-8")
+            assert "VERIFIED" not in text.replace("NOT VERIFIED", ""), rel
         elif rel == "results/status.json":
             body = json.loads(p.read_text(encoding="utf-8"))
             assert body["scientific_results_available"] is False

@@ -1,6 +1,6 @@
 {
   "bootstrap_replicates": 500,
-  "code_sha256": "1d0b377d213c417b79d9c1871cb7ccf5bf32c4ebc2da45a365051357fdf8c8b4",
+  "code_sha256": "2e8be058f70d636fc16e7524ea6f43cb0c0024f71029b833d90fac9d83d15c3f",
   "data": "deterministic synthetic toy volumes (SYNTH_* cases); no BraTS, UPenn or BraTS-Africa data",
   "demo": true,
   "demo_seed": 20261004,
@@ -95,8 +95,8 @@
     "synthetic_uncertainty_vs_error.svg",
     "synthetic_failure_analysis.svg"
   ],
-  "generated_at": "2026-10-04T19:31:27+00:00",
-  "git_commit": "6a7e0af6ef0e98c17d3d100c0f4a7c80097158f3",
+  "generated_at": "2026-10-05T17:53:02+00:00",
+  "git_commit": "eff42d622dfd5dc8e788fba44f73383f2ee06ef5",
   "label": "SYNTHETIC DEMO \u2014 NOT REAL RESULTS",
   "scientific_result": false,
   "synthetic": true,

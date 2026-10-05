@@ -102,10 +102,10 @@
       "title": "Official data acquired via the approved route"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-05",
       "group": "B",
       "id": "B3",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used"
     },
     {
@@ -292,7 +292,7 @@
       "detail": "exact SHA-256 of BraTS2021_MappingToTCIA.xlsx",
       "key": "b3",
       "label": "B3 Mapping-file hash",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "exact SHA-256 of UCSF-PDGM-metadata_v5.csv",

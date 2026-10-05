@@ -112,7 +112,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B4",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used"
     },
     {
@@ -298,7 +298,7 @@
       "detail": "exact SHA-256 of UCSF-PDGM-metadata_v5.csv",
       "key": "b4",
       "label": "B4 UCSF-PDGM metadata hash",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "integrity audit + hashed manifest",

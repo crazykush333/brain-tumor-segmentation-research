@@ -30,9 +30,9 @@ acquisition:                          # gate B2, approved route only (amendment 
   # Route A: runtime receive with the official IBM Aspera CLI. Both values must be set by
   # the owner from the installed client's own help output; the evidence file holds that
   # output (committed). Nothing is ever guessed: unset -> B2 is BLOCKED.
-  receive_command: null
-  receive_command_evidence: null
-  selected_gib: null                  # route A: selection size shown by the client (measured)
+  receive_command: 'sh -c '': "${BRATS_TCIA_PACKAGE_URL:?set BRATS_TCIA_PACKAGE_URL to the DOWNLOAD link of the TCIA BraTS 2021 page}" && ascli faspex5 packages receive --url="$BRATS_TCIA_PACKAGE_URL" --sources=@ts --to-folder=. --ts=@json:''"''"''{"paths":[{"path":"/RSNA-ASNR-MICCAI-BraTS-2021.sums","source":"/RSNA-ASNR-MICCAI-BraTS-2021.sums"}]}''"''"'' && mkdir -p RSNA-ASNR-MICCAI-BraTS-2021 && ascli faspex5 packages receive --url="$BRATS_TCIA_PACKAGE_URL" --sources=@ts --to-folder=RSNA-ASNR-MICCAI-BraTS-2021 --ts=@json:''"''"''{"paths":[{"path":"/RSNA-ASNR-MICCAI-BraTS-2021/BraTS2021_TrainingSet","source":"/RSNA-ASNR-MICCAI-BraTS-2021/BraTS2021_TrainingSet"}]}''"''"'''''
+  receive_command_evidence: docs/data/B2_ASPERA_RECEIVE_EVIDENCE_2026-10-06.md
+  selected_gib: 12.511                # route A: measured 2026-10-06 (13,433,117,589 bytes = training set + .sums; see evidence)
   metadata_files:                     # B3/B4 files, official direct HTTPS (B2 runbook §1)
     - name: "BraTS2021_MappingToTCIA.xlsx"
       url: "https://www.cancerimagingarchive.net/wp-content/uploads/BraTS2021_MappingToTCIA.xlsx"

@@ -287,6 +287,7 @@ def test_gate_step_resume_blocked_and_failed_gate(tmp_path: Path) -> None:
 # ============================================================ B2: never guessed
 def test_b2_blocks_without_delivery_or_verified_command(tmp_path: Path) -> None:
     ctx = make_ctx(tmp_path)
+    ctx.cfg["acquisition"]["receive_command"] = None  # route A not configured
     with pytest.raises(StepBlocked) as e:
         produce_b2(ctx)
     assert "ascli faspex5 -h" in e.value.action and "BRATS_OFFICIAL_DELIVERY" in e.value.action
@@ -300,6 +301,24 @@ def test_b2_blocks_without_delivery_or_verified_command(tmp_path: Path) -> None:
     with pytest.raises(StepBlocked, match="lacks"):
         produce_b2(ctx2)
     assert not FakeOps().calls  # nothing was run or fetched
+
+
+def test_recorded_receive_command_is_evidenced_and_keeps_secrets_out(repo_root: Path) -> None:
+    """The committed route-A command is backed by committed client evidence, receives
+    exactly the training set and the .sums file, and embeds no package link/passcode."""
+    import shlex
+
+    acq = load_master_config(repo_root)["acquisition"]
+    cmd = str(acq["receive_command"])
+    assert (repo_root / acq["receive_command_evidence"]).is_file()
+    assert float(acq["selected_gib"]) > 0
+    parts = shlex.split(cmd)
+    assert parts[:2] == ["sh", "-c"] and len(parts) == 3
+    assert "faspex.cancerimagingarchive.net" not in cmd and "context=" not in cmd
+    assert '"$BRATS_TCIA_PACKAGE_URL"' in parts[2]
+    assert '/RSNA-ASNR-MICCAI-BraTS-2021/BraTS2021_TrainingSet"' in parts[2]
+    assert '/RSNA-ASNR-MICCAI-BraTS-2021.sums"' in parts[2]
+    assert "_dcm" not in parts[2] and "ValidationSet" not in parts[2]
 
 
 # ============================================================ B8: human review only

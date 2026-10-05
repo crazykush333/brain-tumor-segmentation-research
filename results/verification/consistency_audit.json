@@ -1,0 +1,119 @@
+{
+  "questions": [
+    {
+      "answer": "NOT_RUN",
+      "question": "Did the actual data match the declared dataset?",
+      "stage": "DATA"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did the final split match the frozen protocol?",
+      "stage": "SPLIT"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did every model use the correct seed?",
+      "stage": "RUNS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did every ensemble contain exactly the intended members?",
+      "stage": "RUNS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were the correct four C4 conditions used?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was Full excluded from the primary C4 estimand?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was ET used rather than TC/WT for the primary result?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was I computed correctly?",
+      "stage": "THRESHOLDS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was U1 computed correctly?",
+      "stage": "METRICS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was AURC computed correctly?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was Delta-AURC computed correctly?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was C4 equally weighted?",
+      "stage": "PRIMARY_AURC"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were bootstrap units patient groups?",
+      "stage": "BOOTSTRAP"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was bootstrap seed 12345 used?",
+      "stage": "BOOTSTRAP"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were 10,000 replicates used?",
+      "stage": "BOOTSTRAP"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were validation-derived thresholds estimated only on validation?",
+      "stage": "THRESHOLDS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was internal test excluded from tuning?",
+      "stage": "THRESHOLDS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Was external data excluded from training/tuning?",
+      "stage": "EXTERNAL"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were Holm corrections applied only to their declared families?",
+      "stage": "STATISTICS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Were descriptive analyses kept descriptive?",
+      "stage": "STATISTICS"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did figures match tables?",
+      "stage": "FIGURES"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did website numbers match verified artifacts?",
+      "stage": "WEBSITE"
+    },
+    {
+      "answer": "NOT_RUN",
+      "question": "Did GitHub artifacts match the verified result set?",
+      "stage": "PUBLIC_EXPORT"
+    }
+  ]
+}

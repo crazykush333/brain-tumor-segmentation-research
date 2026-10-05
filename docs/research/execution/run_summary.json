@@ -1,18 +1,18 @@
 {
   "dataset": {
-    "acquired": false,
-    "manifest_sha256": null
+    "acquired": true,
+    "manifest_sha256": "1eaabd56793e6a5dbe0a52b58b150cb17340918b851dd9831227392701cb967e"
   },
   "gates": {
     "B1": "PASSED",
     "B10": "LOCKED",
     "B11": "LOCKED",
     "B12": "LOCKED",
-    "B2": "RUNNING",
-    "B3": "LOCKED",
-    "B4": "LOCKED",
-    "B5": "LOCKED",
-    "B6": "LOCKED",
+    "B2": "PASSED",
+    "B3": "PASSED",
+    "B4": "PASSED",
+    "B5": "PASSED",
+    "B6": "RUNNING",
     "B7": "LOCKED",
     "B8": "LOCKED",
     "B9": "LOCKED",
@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "21b2954873fd078a6e779fdcede906b1e890ad21",
+  "git_commit": "349c02663ae0f681f84f1104f8187ce0d968c330",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -61,28 +61,28 @@
     },
     "B2": {
       "attempts": 1,
-      "status": "FAILED",
-      "summary": "integrity/protocol assertion failed: checksum line 1: unrecognized format (supported: GNU '<digest>  <path>', BSD 'ALGO (path) = digest'); extend the parser rather than guessing"
+      "status": "PASSED",
+      "summary": "B2 PASSED: official acquisition"
     },
     "B3": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B3 PASSED: crosswalk hash"
     },
     "B4": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B4 PASSED: UCSF metadata hash"
     },
     "B5": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B5 PASSED: raw data manifest"
     },
     "B6": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "FAILED",
+      "summary": "integrity/protocol assertion failed: crosswalk is missing expected columns: ['Data Collection', 'TCIA PatientID']"
     },
     "B7": {
       "attempts": 0,

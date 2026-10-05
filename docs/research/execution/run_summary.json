@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "808e4080ac966e0870a72dbb06aba2a50ddcb81d",
+  "git_commit": "13b601fb2de77d0dab4e7819a1c571dfdf313c1d",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -39,9 +39,9 @@
   },
   "results": null,
   "results_available": false,
-  "resumes": 1,
+  "resumes": 2,
   "schema_version": 1,
-  "sessions": 2,
+  "sessions": 3,
   "split_hashes": null,
   "steps": {
     "B10": {
@@ -100,7 +100,7 @@
       "summary": ""
     },
     "C1": {
-      "attempts": 2,
+      "attempts": 3,
       "status": "REVIEW_REQUIRED",
       "summary": "C1: no approved data route for BraTS-Africa (configs/dataset/brats_africa.yaml source.route is null; B1 covers the BraTS 2021 package only; SR7)"
     },
@@ -160,7 +160,7 @@
       "summary": ""
     },
     "ENV": {
-      "attempts": 2,
+      "attempts": 3,
       "status": "PASSED",
       "summary": "vm: GPU none, status NOT_READY"
     },
@@ -225,6 +225,11 @@
       "summary": ""
     },
     "VALIDATION": {
+      "attempts": 0,
+      "status": "LOCKED",
+      "summary": ""
+    },
+    "VERIFY": {
       "attempts": 0,
       "status": "LOCKED",
       "summary": ""

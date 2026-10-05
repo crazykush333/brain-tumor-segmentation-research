@@ -93,7 +93,7 @@ gates:
   # --- B: data gates (in order) -------------------------------------------------
   - {id: B1, title: "Approved data route (TCIA written authorization or owner-approved alternative; §5.1, SR7, amendment v1.0-A1)", status: PASSED, evidence: "docs/data/B1_EVIDENCE_2026-10-01.md", closed_on: "2026-10-01"}
   - {id: B2, title: "Official data acquired via the approved route", status: PASSED, evidence: "docs/data/records/B2.json", closed_on: "2026-10-05"}
-  - {id: B3, title: "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used", status: AUTHORIZED, evidence: null, closed_on: null}
+  - {id: B3, title: "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used", status: RUNNING, evidence: null, closed_on: null}
   - {id: B4, title: "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used", status: AUTHORIZED, evidence: null, closed_on: null}
   - {id: B5, title: "Data manifest and hashes recorded", status: LOCKED, evidence: null, closed_on: null}
   - {id: B6, title: "Counts derived from the hashed crosswalk and checked against the protocol targets", status: LOCKED, evidence: null, closed_on: null}

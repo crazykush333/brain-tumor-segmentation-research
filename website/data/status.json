@@ -105,7 +105,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B3",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used"
     },
     {
@@ -292,7 +292,7 @@
       "detail": "exact SHA-256 of BraTS2021_MappingToTCIA.xlsx",
       "key": "b3",
       "label": "B3 Mapping-file hash",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "exact SHA-256 of UCSF-PDGM-metadata_v5.csv",

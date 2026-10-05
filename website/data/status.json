@@ -10,7 +10,7 @@
     "verification": "UNAVAILABLE"
   },
   "data": {
-    "acquired": false,
+    "acquired": true,
     "approved_route": "Direct official TCIA access into a private, access-restricted computational environment",
     "authorization": "APPROVED",
     "authorization_basis": "OWNER_APPROVED_ALTERNATIVE",
@@ -95,24 +95,24 @@
       "title": "Approved data route (TCIA written authorization or owner-approved alternative; §5.1, SR7, amendment v1.0-A1)"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-05",
       "group": "B",
       "id": "B2",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Official data acquired via the approved route"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B3",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B4",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used"
     },
     {
@@ -286,19 +286,19 @@
       "detail": "official files via the B1-approved route; inventory hashed",
       "key": "b2",
       "label": "B2 Data acquisition",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "exact SHA-256 of BraTS2021_MappingToTCIA.xlsx",
       "key": "b3",
       "label": "B3 Mapping-file hash",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "exact SHA-256 of UCSF-PDGM-metadata_v5.csv",
       "key": "b4",
       "label": "B4 UCSF-PDGM metadata hash",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "integrity audit + hashed manifest",
@@ -386,11 +386,11 @@
   },
   "results_status": {
     "generated_from": "docs/project_status.yaml (brats-uncertainty export-site-data)",
-    "real_brats_data_processed": false,
+    "real_brats_data_processed": true,
     "real_experiment_executed": false,
     "scientific_results_available": false,
     "statement": "Scientific results are not yet available. Experimental execution is pending.",
-    "status": "pending_official_data_and_compute",
+    "status": "data_acquired_execution_pending",
     "synthetic_demo_available": true,
     "synthetic_results_in_scientific_namespace": false,
     "training_status": "NOT_STARTED"

@@ -1,10 +1,10 @@
 {
   "generated_from": "docs/project_status.yaml (brats-uncertainty export-site-data)",
-  "real_brats_data_processed": false,
+  "real_brats_data_processed": true,
   "real_experiment_executed": false,
   "scientific_results_available": false,
   "statement": "Scientific results are not yet available. Experimental execution is pending.",
-  "status": "pending_official_data_and_compute",
+  "status": "data_acquired_execution_pending",
   "synthetic_demo_available": true,
   "synthetic_results_in_scientific_namespace": false,
   "training_status": "NOT_STARTED"

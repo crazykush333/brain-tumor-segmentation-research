@@ -126,7 +126,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B6",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Counts derived from the hashed crosswalk and checked against the protocol targets"
     },
     {
@@ -310,7 +310,7 @@
       "detail": "counts derived from the hashed crosswalk vs protocol targets",
       "key": "b6",
       "label": "B6 Count verification",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "T_screen and same-patient screen; after B6 has passed",

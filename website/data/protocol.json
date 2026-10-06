@@ -20,6 +20,13 @@
       "id": "v1.0-A3",
       "title": "Protocol v1.0 amendment A3: automated, deterministic adjudication at gate B8",
       "type": "METHOD / FEASIBILITY"
+    },
+    {
+      "date": "2026-10-06",
+      "file": "docs/research/protocol-amendments/2026-10-06_B8_A5_identity-clean-cohort.md",
+      "id": "v1.0-A5",
+      "title": "Protocol v1.0 amendment A5: identity-clean primary development cohort at gate B8",
+      "type": "METHOD / POPULATION"
     }
   ],
   "frozen_on": "2026-09-28",

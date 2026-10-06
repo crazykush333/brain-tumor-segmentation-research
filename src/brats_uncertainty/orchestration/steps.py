@@ -673,13 +673,131 @@ def produce_b8_automated(ctx: Context, flagged: list[tuple[str, str]]) -> list[P
     return [record, decisions_csv, audit]
 
 
+IDENTITY_CLEAN_MODE = "identity_clean_v1.0-A5"
+A5_CONFIG = Path("configs/grouping/b8_identity_clean_v1.0-A5.yaml")
+A5_DIR = "B8_A5"
+A5_VERIFICATION = Path("results/verification/A5_IDENTITY_VERIFICATION")
+A5_AMENDMENT = "docs/research/protocol-amendments/2026-10-06_B8_A5_identity-clean-cohort.md"
+
+
+def b8_identity_clean(ctx: Context) -> bool:
+    return bool(ctx.cfg["review"].get("mode") == IDENTITY_CLEAN_MODE)
+
+
+def a5_primary_cohort(ctx: Context) -> list[str]:
+    with (ctx.records / A5_DIR / "cohort.csv").open(encoding="utf-8", newline="") as fh:
+        return sorted(r["case_id"] for r in csv.DictReader(fh) if r["cohort"] == "primary")
+
+
+def produce_b8_identity_clean(ctx: Context) -> list[Path]:
+    """Amendment v1.0-A5: identity-clean primary cohort, quarantine, independent check."""
+    import hashlib
+
+    from brats_uncertainty.data.crosswalk import read_table_records
+    from brats_uncertainty.grouping import identity_clean as ic
+    from brats_uncertainty.protocol import load_protocol
+    from brats_uncertainty.utils.git import git_commit
+    from brats_uncertainty.utils.hashing import sha256_file
+    from brats_uncertainty.verification import identity_audit as ia
+
+    cfg = read_yaml(ctx.repo_root / A5_CONFIG)
+    renamed = {int(k): int(v) for k, v in cfg["ucsf_renamed_follow_ups"].items()}
+    tcga = list(cfg["tcga_namespace_collections"])
+    cw = read_table_records(ctx.metadata_path("B3"))
+    uc = read_table_records(ctx.metadata_path("B4"))
+    verified = load_protocol(ctx.repo_root).verified_groups
+    development = sorted(r.case_id for r in development_rows(ctx))
+    ids = ic.case_identities(cw, uc, renamed=renamed, tcga_collections=tcga)
+    res = ic.build_cohort(ids, development, verified, ic.follow_up_pairs(uc, development))
+    ind_ids = ia.identity_keys(cw, uc, renamed, tcga)
+    ip, iq, ig = ia.cohort_and_groups(ind_ids, development, verified)
+    rec = ia.reconcile(res.primary, res.quarantine, res.groups, ip, iq, ig)
+    res.acceptance["independent_reconstruction_identical"] = rec["status"] == "VERIFIED"
+    out = ctx.records / A5_DIR
+    out.mkdir(parents=True, exist_ok=True)
+    group_of = res.group_of()
+    with (out / "cohort.csv").open("w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(ic.COHORT_FIELDS)
+        for c in development:
+            i = ids[c]
+            key = hashlib.sha256(i.key.encode()).hexdigest()[:16] if i.key else ""
+            cohort = ic.PRIMARY if i.key else ic.QUARANTINE
+            w.writerow([c, cohort, key, group_of.get(c, ""), i.site, i.collection])
+    summary = {
+        "gate": "B8",
+        "procedure": IDENTITY_CLEAN_MODE,
+        "amendment": A5_AMENDMENT,
+        "config": A5_CONFIG.as_posix(),
+        "config_sha256": hashlib.sha256((ctx.repo_root / A5_CONFIG).read_bytes()).hexdigest(),
+        "code_commit": git_commit(ctx.repo_root),
+        "inputs_sha256": {
+            "crosswalk": sha256_file(ctx.metadata_path("B3")),
+            "ucsf_metadata": sha256_file(ctx.metadata_path("B4")),
+        },
+        "identity_key_note": "identity keys are stored as truncated SHA-256 (equality only)",
+        "follow_up_pairs_in_development": ic.follow_up_pairs(uc, development),
+        **ic.summary(res, development),
+        "independent_verification": rec,
+        "recorded_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+    }
+    write_json(out / "summary.json", summary, overwrite=True)
+    vjson = ctx.repo_root / A5_VERIFICATION.with_suffix(".json")
+    vjson.parent.mkdir(parents=True, exist_ok=True)
+    write_json(vjson, {"gate": "B8", "procedure": IDENTITY_CLEAN_MODE, **rec}, overwrite=True)
+    vjson.with_suffix(".md").write_text(
+        "# A5 identity verification\n\n"
+        f"A5_IDENTITY_VERIFICATION = {rec['status']}\n\n"
+        "Independent re-implementation (`brats_uncertainty.verification.identity_audit`, which "
+        "does not import the production grouping code) versus the production cohort "
+        "(`brats_uncertainty.grouping.identity_clean`).\n\n"
+        f"- primary cohort identical: {rec['checks']['primary_identical']} "
+        f"(production {rec['n_primary'][0]}, independent {rec['n_primary'][1]})\n"
+        f"- quarantine identical: {rec['checks']['quarantine_identical']} "
+        f"(production {rec['n_quarantine'][0]}, independent {rec['n_quarantine'][1]})\n"
+        f"- patient groups identical: {rec['checks']['groups_identical']} "
+        f"(production {rec['n_groups'][0]}, independent {rec['n_groups'][1]})\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    if not res.accepted:
+        failed = sorted(k for k, ok in res.acceptance.items() if not ok)
+        raise StepReview(
+            f"B8 (v1.0-A5) failed its identity-provenance checks: {failed}",
+            f"STOP: inspect {ctx.rel(out / 'summary.json')}; nothing is adjusted",
+            failed=failed,
+        )
+    record = ctx.records / "B8_review_record.json"
+    write_json(
+        record,
+        {
+            "gate": "B8",
+            "procedure": IDENTITY_CLEAN_MODE,
+            "amendment": A5_AMENDMENT,
+            "n_primary": len(res.primary),
+            "n_quarantine": len(res.quarantine),
+            "n_patient_groups": len(res.groups),
+            "cohort_file": ctx.rel(out / "cohort.csv"),
+            "summary": ctx.rel(out / "summary.json"),
+            "independent_verification": rec["status"],
+            "recorded_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        },
+    )
+    return [record, out / "cohort.csv", out / "summary.json", vjson]
+
+
 def produce_b8(ctx: Context) -> list[Path]:
     from brats_uncertainty.grouping.review import read_reviews, resolve_reviews
     from brats_uncertainty.protocol import load_protocol
 
+    record = ctx.records / "B8_review_record.json"
+    if b8_identity_clean(ctx):  # v1.0-A5 uses provider identity only, not the B7 screen
+        if record.is_file():
+            a5dir = ctx.records / A5_DIR
+            return [record, a5dir / "cohort.csv", a5dir / "summary.json"]
+        return produce_b8_identity_clean(ctx)
     spec = load_protocol(ctx.repo_root)
     flagged = flagged_pairs(ctx)
-    record = ctx.records / "B8_review_record.json"
     if record.is_file():
         if b8_automated(ctx):
             return [record, ctx.records / B8_AUTO_DECISIONS, ctx.records / B8_AUTO_AUDIT]
@@ -784,6 +902,13 @@ def produce_b9(ctx: Context) -> list[Path]:
     audit = ctx.splits / "grouping_audit_dev.json"
     if out.is_file():
         return [out, audit]
+    if b8_identity_clean(ctx):
+        from brats_uncertainty.pipeline import stage_freeze_groups_from_cohort
+
+        stage_freeze_groups_from_cohort(
+            ctx.repo_root, ctx.records / A5_DIR / "cohort.csv", ctx.splits
+        )
+        return [out, audit]
     if b8_automated(ctx):
         stage_freeze_groups(
             ctx.repo_root,
@@ -837,7 +962,15 @@ def produce_b10(ctx: Context) -> list[Path]:
         groups={g: tuple(sorted(m)) for g, m in groups.items()},
         link_sources={},
     )
-    stage_create_split(ctx.repo_root, crosswalk_rows(ctx), grouping, _labels(ctx), ctx.splits)
+    expected = len(a5_primary_cohort(ctx)) if b8_identity_clean(ctx) else None
+    stage_create_split(
+        ctx.repo_root,
+        crosswalk_rows(ctx),
+        grouping,
+        _labels(ctx),
+        ctx.splits,
+        expected_development_count=expected,
+    )
     return [split, summary]
 
 

@@ -122,3 +122,58 @@ def test_tampered_split_file_breaks_the_b12_hash(tmp_path: Path) -> None:
     p.write_text(p.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     r = sa.audit(root)
     assert not r["checks"]["b12_split_hash_matches_file"] and not r["passed"]
+
+
+Q = "BraTS2021_99993"  # no authoritative identity: quarantine
+
+
+def _a5_fixture(root: Path, *, quarantine_in_split: bool = False) -> Path:
+    """Amendment v1.0-A5 layout: B8_A5 cohort file; the split covers the primary cohort."""
+    _fixture(root)
+    rel = sa.A5_CONFIG
+    shutil.copy(REPO_ROOT / rel, root / rel)
+    rec = root / "docs/data/records"
+    key = {A[0]: "k1", A[1]: "k1", B[0]: "k2", B[1]: "k3", X[0]: "k4", X[1]: "k5"}
+    group = {A[0]: "G1", A[1]: "G1", B[0]: "G2", B[1]: "G2", X[0]: "G3", X[1]: "G4"}
+    rows = [[c, "primary", key[c], group[c], "18", "UCSF-PDGM"] for c in sorted(key)]
+    rows.append([Q, "quarantine", "", "", "18", "UCSF-PDGM_Additional"])
+    _write(
+        rec / "B8_A5/cohort.csv",
+        ["case_id", "cohort", "identity_key", "group_id", "site", "collection"],
+        rows,
+    )
+    (rec / "B8_A5/summary.json").write_text(
+        json.dumps(
+            {
+                "procedure": "identity_clean_v1.0-A5",
+                "accepted": True,
+                "acceptance": {"verified_groups_intact": True},
+                "config_sha256": hashlib.sha256((root / rel).read_bytes()).hexdigest(),
+                "independent_verification": {"status": "VERIFIED"},
+                "n_primary": 6,
+                "n_quarantine": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (rec / "B6.json").write_text(
+        json.dumps({"development_ids_sha256": _ids([*key, Q])}), encoding="utf-8"
+    )
+    if quarantine_in_split:
+        with (root / "splits/patient_groups_dev.csv").open("a", encoding="utf-8") as fh:
+            fh.write(f"{Q},G5\n")
+    return root
+
+
+def test_a5_consistent_split_passes(tmp_path: Path) -> None:
+    r = sa.audit(_a5_fixture(tmp_path))
+    assert r["passed"], r["checks"]
+    assert r["checks"]["a5_primary_plus_quarantine_equals_b6_development"]
+    assert r["checks"]["b9_groups_equal_independent_recomputation"]
+    assert r["b8"]["n_quarantine"] == 1 and r["patient_groups"]["n_groups"] == 4
+
+
+def test_a5_quarantined_case_in_groups_fails(tmp_path: Path) -> None:
+    r = sa.audit(_a5_fixture(tmp_path, quarantine_in_split=True))
+    assert not r["passed"]
+    assert not r["checks"]["b9_covers_exactly_the_primary_cohort"]

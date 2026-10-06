@@ -61,6 +61,9 @@ def audit(repo: Path) -> dict[str, Any]:
     rec = repo / "docs/data/records"
     splits = repo / "splits"
     checks: dict[str, bool] = {}
+    a5 = rec / "B8_A5" / "cohort.csv"
+    if a5.is_file():
+        return _audit_with_groups(repo, *_a5_b8_checks(repo, a5, checks))
     flagged = {_key(r["case_a"], r["case_b"]) for r in _rows(rec / "B7/flagged_pairs.csv")}
     decisions = {
         _key(r["case_a"], r["case_b"]): r for r in _rows(rec / "B8_automated_decisions.csv")
@@ -118,6 +121,103 @@ def audit(repo: Path) -> dict[str, Any]:
     checks["development_equals_b6_site_not_1_cohort"] = (
         _sha_ids(dev) == b6["development_ids_sha256"] and len(dev) == b6["counts"]["development"]
     )
+    b8_summary = {
+        "accepted": b8.get("accepted"),
+        "n_flagged": len(flagged),
+        "decisions": dict(sorted(dec_counts.items())),
+        "rules": dict(sorted(rule_counts.items())),
+        "tau_neg": b8.get("tau_neg"),
+        "tau_ctrl": b8.get("tau_ctrl"),
+        "controls": b8.get("controls"),
+        "acceptance": b8.get("acceptance"),
+        "config_sha256": b8.get("config_sha256"),
+    }
+    return _audit_with_groups(repo, checks, case_group, produced, b8_summary)
+
+
+A5_CONFIG = "configs/grouping/b8_identity_clean_v1.0-A5.yaml"
+
+
+def _a5_b8_checks(
+    repo: Path, cohort_csv: Path, checks: dict[str, bool]
+) -> tuple[dict[str, bool], dict[str, str], dict[str, set[str]], dict[str, Any]]:
+    """Amendment v1.0-A5: cohorts and identity groups, recomputed independently."""
+    rec = repo / "docs/data/records"
+    rows = _rows(cohort_csv)
+    summary = json.loads((rec / "B8_A5" / "summary.json").read_text("utf-8"))
+    primary = sorted(r["case_id"] for r in rows if r["cohort"] == "primary")
+    quarantine = sorted(r["case_id"] for r in rows if r["cohort"] == "quarantine")
+    b6 = json.loads((rec / "B6.json").read_text("utf-8"))
+    checks["a5_config_hash"] = summary.get("config_sha256") == _sha_file(repo / A5_CONFIG)
+    checks["a5_acceptance_passed"] = bool(summary.get("accepted")) and all(
+        summary["acceptance"].values()
+    )
+    checks["a5_independent_identity_verification"] = (
+        summary["independent_verification"]["status"] == "VERIFIED"
+    )
+    checks["a5_primary_plus_quarantine_equals_b6_development"] = _sha_ids(
+        primary + quarantine
+    ) == b6["development_ids_sha256"] and not set(primary) & set(quarantine)
+    checks["a5_quarantine_has_no_identity_key"] = all(
+        not r["identity_key"] for r in rows if r["cohort"] == "quarantine"
+    )
+    # groups: same identity hash, plus verified groups (all members must be primary)
+    parent = {c: c for c in primary}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    by_key: dict[str, list[str]] = {}
+    for r in rows:
+        if r["cohort"] == "primary":
+            by_key.setdefault(r["identity_key"], []).append(r["case_id"])
+    verified = _verified_groups(repo)
+    for members in [*by_key.values(), *verified.values()]:
+        ms = [m for m in members if m in parent]
+        for m in ms[1:]:
+            ra, rb = find(ms[0]), find(m)
+            if ra != rb:
+                parent[max(ra, rb)] = min(ra, rb)
+    recomputed: dict[str, set[str]] = {}
+    for c in primary:
+        recomputed.setdefault(find(c), set()).add(c)
+    case_group = {
+        r["case_id"]: r["group_id"] for r in _rows(repo / "splits/patient_groups_dev.csv")
+    }
+    produced: dict[str, set[str]] = {}
+    for c, g in case_group.items():
+        produced.setdefault(g, set()).add(c)
+    checks["b9_groups_equal_independent_recomputation"] = sorted(
+        map(sorted, recomputed.values())
+    ) == sorted(map(sorted, produced.values()))
+    checks["b9_covers_exactly_the_primary_cohort"] = sorted(case_group) == primary
+    b8_summary = {
+        "procedure": summary.get("procedure"),
+        "accepted": summary.get("accepted"),
+        "n_development_pool": summary.get("n_development_pool"),
+        "n_primary": summary.get("n_primary"),
+        "n_quarantine": summary.get("n_quarantine"),
+        "config_sha256": summary.get("config_sha256"),
+        "independent_identity_verification": summary["independent_verification"]["status"],
+    }
+    return checks, case_group, produced, b8_summary
+
+
+def _audit_with_groups(
+    repo: Path,
+    checks: dict[str, bool],
+    case_group: dict[str, str],
+    produced: dict[str, set[str]],
+    b8_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """B10-B12 checks shared by every B8 procedure."""
+    splits = repo / "splits"
+    dev = sorted(case_group)
+    sizes = sorted((len(v) for v in produced.values()), reverse=True)
+    verified = _verified_groups(repo)
     # B10-B12 split
     split_rows = _rows(splits / "split_all.csv")
     part = {r["case_id"]: r["partition"] for r in split_rows}
@@ -125,10 +225,13 @@ def audit(repo: Path) -> dict[str, Any]:
     checks["split_covers_exactly_development"] = sorted(part) == dev
     checks["split_groups_equal_b9_groups"] = split_group == case_group
     checks["split_partitions_are_train_validation_test"] = set(part.values()) <= set(PARTITIONS)
-    crossing = [g for g, ms in produced.items() if len({part[m] for m in ms}) != 1]
+    # a case absent from the split counts as its own partition (None): a failure, not a crash
+    crossing = [g for g, ms in produced.items() if len({part.get(m) for m in ms}) != 1]
     checks["no_patient_group_crosses_partitions"] = not crossing
     checks["verified_groups_A_B_intact"] = all(
-        len({case_group[m] for m in ms}) == 1 and len({part[m] for m in ms}) == 1
+        len({case_group.get(m) for m in ms}) == 1
+        and None not in {case_group.get(m) for m in ms}
+        and len({part.get(m) for m in ms}) == 1
         for ms in verified.values()
     )
     summary = json.loads((splits / "split_summary.json").read_text("utf-8"))
@@ -146,21 +249,13 @@ def audit(repo: Path) -> dict[str, Any]:
     checks["b12_partition_id_hashes_match"] = all(
         hashes["partition_id_list_sha256"].get(p) == _sha_ids(ids) for p, ids in by_part.items()
     )
-    groups_per_part = {p: len({case_group[c] for c in ids}) for p, ids in sorted(by_part.items())}
+    groups_per_part = {
+        p: len({case_group.get(c) for c in ids}) for p, ids in sorted(by_part.items())
+    }
     return {
         "passed": all(checks.values()),
         "checks": checks,
-        "b8": {
-            "accepted": b8.get("accepted"),
-            "n_flagged": len(flagged),
-            "decisions": dict(sorted(dec_counts.items())),
-            "rules": dict(sorted(rule_counts.items())),
-            "tau_neg": b8.get("tau_neg"),
-            "tau_ctrl": b8.get("tau_ctrl"),
-            "controls": b8.get("controls"),
-            "acceptance": b8.get("acceptance"),
-            "config_sha256": b8.get("config_sha256"),
-        },
+        "b8": b8_summary,
         "patient_groups": {
             "n_cases": len(dev),
             "n_groups": len(produced),

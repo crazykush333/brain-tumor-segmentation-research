@@ -1,0 +1,42 @@
+# Gate B8 under amendment v1.0-A5: identity-clean primary development cohort.
+# Pre-specified before any split, training, test evaluation or scientific result.
+# No image similarity, Dice value, model output or post-split information is used.
+amendment: v1.0-A5
+procedure_version: 1
+
+sources:                              # authoritative identity sources only
+  crosswalk: "BraTS2021_MappingToTCIA.xlsx (B3 SHA-256 223243c5821c282e90da980ba38d860ab2d2a597d1f4f1800ebe227329a2dc0b)"
+  ucsf_metadata: "UCSF-PDGM-metadata_v5.csv (B4 SHA-256 afc1c23a0eb0597b56e603741e72f2308b4860281187cd3808e05b7a0116fd78)"
+  ucsf_follow_up_notice: "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/ (page updated 2025/05/30)"
+
+# Authoritative identity of a development case (site != 1, segmentation cohort = Training):
+#   UCSF-PDGM: base patient number from the v5 metadata row whose 'BraTS21 ID' is the case
+#              ('UCSF-PDGM-<n>' or '_FU<k>d' follow-up -> n); otherwise the crosswalk number
+#              mapped through the official version-3 rename list below.
+#   Other collections: the real TCIA patient ID in its identity namespace
+#              (TCGA-GBM and TCGA-LGG share the TCGA barcode namespace).
+#   'new-not-previously-in-TCIA' or blank -> NO authoritative identity.
+ucsf_renamed_follow_ups:              # official TCIA notice: old ID -> base patient
+  315: 433
+  278: 431
+  175: 396
+  138: 429
+  181: 409
+  289: 391
+tcga_namespace_collections: [TCGA-GBM, TCGA-LGG]
+
+cohorts:
+  primary: "development cases with an authoritative identity"
+  quarantine: "development cases without one (IDENTITY-UNCERTAIN QUARANTINE COHORT); never used in training, validation, thresholds, calibration or primary inference"
+
+patient_groups: "connected components of: same authoritative identity key; protocol verified groups A and B"
+# Cases with different identity keys are different patients by provider identity. Lack of
+# identity is never treated as proof of uniqueness: such cases are quarantined, not grouped.
+
+acceptance:                           # identity provenance only; no sample-size threshold
+  verified_groups_intact: true
+  follow_up_links_intact: true
+  different_identities_never_grouped: true
+  no_site1_in_development: true
+  cohorts_partition_development: true  # primary + quarantine = the 740 B6 development cases
+  independent_reconstruction_identical: true

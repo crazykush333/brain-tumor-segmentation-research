@@ -181,7 +181,8 @@ def test_runner_uses_the_automated_b8_procedure(
     from tests.unit.test_orchestration import make_ctx
 
     ctx = make_ctx(tmp_path)
-    assert st.b8_automated(ctx)  # the committed configuration selects amendment v1.0-A3
+    ctx.cfg["review"]["mode"] = st.AUTOMATED_B8_MODE  # A3 (withdrawn) stays runnable as audit
+    assert st.b8_automated(ctx)
     (ctx.records / "B7").mkdir(parents=True)
     (ctx.records / "B7" / "flagged_pairs.csv").write_text(
         "case_a,case_b\nSYN_000,SYN_001\n", encoding="utf-8"
@@ -194,3 +195,19 @@ def test_runner_uses_the_automated_b8_procedure(
     monkeypatch.setattr(st, "produce_b8_automated", lambda c, f: seen.append(f) or [])
     st.produce_b8(ctx)
     assert seen == [[("SYN_000", "SYN_001")]]
+
+
+def test_runner_uses_the_identity_clean_b8_procedure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.orchestration import steps as st
+    from tests.unit.test_orchestration import make_ctx
+
+    ctx = make_ctx(tmp_path)
+    assert st.b8_identity_clean(ctx)  # the committed configuration selects amendment v1.0-A5
+    assert not st.b8_automated(ctx)
+    seen: list[Any] = []
+    monkeypatch.setattr(st, "produce_b8_identity_clean", lambda c: seen.append(c) or [])
+    monkeypatch.setattr(st, "produce_b8_automated", lambda c, f: pytest.fail("A3 must not run"))
+    st.produce_b8(ctx)
+    assert seen == [ctx]

@@ -171,14 +171,54 @@ def stage_freeze_groups(
     return grouping
 
 
+def stage_freeze_groups_from_cohort(repo_root: Path, cohort_csv: Path, out_dir: Path) -> None:
+    """Gate B9 under amendment v1.0-A5: freeze the primary cohort's identity groups."""
+    require_action("freeze_patient_groups", repo_root)
+    with cohort_csv.open(encoding="utf-8", newline="") as fh:
+        rows = [r for r in csv.DictReader(fh) if r["cohort"] == "primary"]
+    if not rows or any(not r["group_id"] for r in rows):
+        raise DataValidationError("A5 cohort file lacks primary group assignments")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    groups_csv = out_dir / "patient_groups_dev.csv"
+    if groups_csv.exists():
+        raise FileExistsError(f"refusing to overwrite {groups_csv}")
+    with groups_csv.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=["case_id", "group_id"], lineterminator="\n")
+        w.writeheader()
+        w.writerows(
+            {"case_id": r["case_id"], "group_id": r["group_id"]}
+            for r in sorted(rows, key=lambda r: r["case_id"])
+        )
+    sizes: dict[str, int] = {}
+    for r in rows:
+        sizes[r["group_id"]] = sizes.get(r["group_id"], 0) + 1
+    write_json(
+        out_dir / "grouping_audit_dev.json",
+        {
+            "procedure": "identity_clean_v1.0-A5",
+            "n_cases": len(rows),
+            "n_groups": len(sizes),
+            "n_multi_case_groups": sum(1 for s in sizes.values() if s > 1),
+            "max_group_size": max(sizes.values()),
+            "source": cohort_csv.name,
+        },
+    )
+
+
 def stage_create_split(
     repo_root: Path,
     crosswalk_rows: list[CrosswalkRow],
     grouping: PatientGrouping,
     labels: Mapping[str, Path],
     out_dir: Path,
+    *,
+    expected_development_count: int | None = None,
 ) -> SplitResult:
-    """Gates B10-B12: create the split once, assert, write IDs and hashes."""
+    """Gates B10-B12: create the split once, assert, write IDs and hashes.
+
+    ``expected_development_count`` is the protocol's 740, or under amendment v1.0-A5 the
+    size of the identity-clean primary cohort (the quarantine is never split).
+    """
     require_action("create_split", repo_root)
     spec = load_protocol(repo_root)
     cohorts_cfg: dict[str, Any] = spec.raw["cohorts"]
@@ -202,7 +242,9 @@ def stage_create_split(
         result,
         site_of_case={r.case_id: r.site_id for r in crosswalk_rows},
         hoi_site_id=str(cohorts_cfg["hoi_site_id"]),
-        expected_development_count=int(cohorts_cfg["development_count_before_grouping"]),
+        expected_development_count=expected_development_count
+        if expected_development_count is not None
+        else int(cohorts_cfg["development_count_before_grouping"]),
         verified_groups=spec.verified_groups,
     )
     out_dir.mkdir(parents=True, exist_ok=True)

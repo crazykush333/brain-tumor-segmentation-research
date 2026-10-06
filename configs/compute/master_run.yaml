@@ -44,9 +44,9 @@ acquisition:                          # gate B2, approved route only (amendment 
       source_url: "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/"
 
 review:                               # gate B8 (protocol section 6.2)
-  # Amendment v1.0-A3 (2026-10-06): the 49,468 flagged pairs are adjudicated by the
-  # pre-specified automated procedure (configs/grouping/b8_automated_v1.0-A3.yaml).
-  mode: automated_v1.0-A3
+  # Amendment v1.0-A5 (2026-10-06): identity-clean primary cohort and quarantine
+  # (configs/grouping/b8_identity_clean_v1.0-A5.yaml). v1.0-A3 failed and is withdrawn.
+  mode: identity_clean_v1.0-A5
   decisions_file: docs/data/records/B8_reviews.csv   # manual mode only
   decisions_env: BRATS_B8_REVIEWS
 

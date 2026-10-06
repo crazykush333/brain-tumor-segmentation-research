@@ -1,9 +1,19 @@
 {
   "completed": true,
   "expected_lr_at_resume": 0.0043838329055408696,
-  "first_attempt_epochs_logged": 5,
+  "first_attempt_epochs_logged": 3,
   "killed_after_epoch": 3,
-  "logged_lr_at_resume": null,
-  "resume_pass": false,
-  "resumed_at_epoch": null
+  "logged_lr_at_resume": 0.00438,
+  "rerun_of": {
+    "completed": true,
+    "expected_lr_at_resume": 0.0043838329055408696,
+    "first_attempt_epochs_logged": 5,
+    "killed_after_epoch": 3,
+    "logged_lr_at_resume": null,
+    "resume_pass": false,
+    "resumed_at_epoch": null
+  },
+  "rerun_reason": "the first R1 attempt was invalid: the child's output was block-buffered, so the harness never saw three logged epochs and never interrupted the run; it completed all five epochs and the 'resumed' process started after training had finished (harness defect, fixed by unbuffered child output); R1 is re-run once, nothing else is re-measured",
+  "resume_pass": true,
+  "resumed_at_epoch": 3
 }

@@ -1,8 +1,6 @@
 {
-  "acceptance_failures": [
-    "resume check did not pass"
-  ],
-  "calendar_weeks": null,
+  "acceptance_failures": [],
+  "calendar_weeks": 4.19,
   "cap_gpu_h": 220.0,
   "count_convention": "ensemble passes per member; 3 members loaded together (spec §3)",
   "final": {
@@ -20,14 +18,12 @@
   },
   "not_measurable_on_platform": [
     "p100_epoch_time_s",
-    "concurrent_2gpu_epoch_time_s",
-    "quota_h_week",
-    "session_limit_h"
+    "concurrent_2gpu_epoch_time_s"
   ],
   "sr1_applied": false,
   "sr6_steps_applied": [],
   "sr8_events": [],
-  "status": "OWNER_CONSULTATION",
+  "status": "FEASIBLE",
   "steps": [
     {
       "concurrency_applied": false,

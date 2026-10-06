@@ -6,11 +6,10 @@
   "metric_s_per_case_condition_cpu": 12.007500843333522,
   "not_measurable_on_platform": [
     "p100_epoch_time_s",
-    "concurrent_2gpu_epoch_time_s",
-    "quota_h_week",
-    "session_limit_h"
+    "concurrent_2gpu_epoch_time_s"
   ],
   "planned_preprocessed_cases": 397,
+  "platform_limits_source": "Kaggle accelerator dialog, 2026-10-06 ('Availability is limited to 30 hours per week'); Kaggle 12-hour notebook session limit (remote_compute.yaml planning_limits)",
   "projection_inputs": {
     "concurrency_gain": null,
     "cpu_bound": true,
@@ -20,9 +19,9 @@
     "overhead_frac": 0.12595671573634154,
     "peak_mem_fits_default_plan": true,
     "platform": "kaggle",
-    "quota_h_week": null,
-    "resume_pass": false,
-    "session_limit_h": null
+    "quota_h_week": 30.0,
+    "resume_pass": true,
+    "session_limit_h": 12.0
   },
   "spec_quantities": {
     "concurrent_2gpu_epoch_time_s": "not measurable on this platform",
@@ -37,10 +36,10 @@
     "p100_epoch_time_s": "not measurable on this platform",
     "peak_mem_gb": 9.8095703125,
     "preproc_s_per_case": 3.1359128981000026,
-    "quota_h_week": "not measurable on this platform",
-    "resume_pass": false,
+    "quota_h_week": 30.0,
+    "resume_pass": true,
     "seed_epoch_time_cv": 0.040647696322864815,
-    "session_limit_h": "not measurable on this platform",
+    "session_limit_h": 12.0,
     "single_gpu_epoch_time_s": 248.26
   }
 }

@@ -1,0 +1,9 @@
+{
+  "detail": {
+    "error": "BackendError: POST failed with: {\"errors\":[\"New Notebooks cannot be attached in non-interactive sessions, found no versions attached for Notebook [ayushkushwaha123/brats-99-master-pipeline].\"],\"error\":{\"code\":9},\"wasSuccessful\":false}",
+    "mode": "kagglehub notebook output"
+  },
+  "restore_notebook": "ayushkushwaha123/brats-99-master-pipeline",
+  "restored": [],
+  "source": null
+}

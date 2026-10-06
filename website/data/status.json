@@ -247,10 +247,10 @@
       "title": "Pilot computes no label-based scientific metrics"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "D",
       "id": "D5",
-      "status": "NOT_STARTED",
+      "status": "CLOSED",
       "title": "No site-1 or BraTS-Africa data in the pilot"
     },
     {

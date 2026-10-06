@@ -159,7 +159,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B10",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Final split created once"
     },
     {
@@ -339,7 +339,7 @@
       "detail": "created once",
       "key": "b10",
       "label": "B10 Final split",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "split assertions pass",

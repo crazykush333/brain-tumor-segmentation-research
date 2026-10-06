@@ -61,7 +61,7 @@ data:
   statement: "No study imaging or label-volume data have been downloaded."
 
 training:
-  status: NOT_STARTED
+  status: IN_PROGRESS
 
 evaluation:
   internal: NOT_STARTED

@@ -357,7 +357,7 @@
       "detail": "arms A/B x seeds 0-2",
       "key": "training",
       "label": "Training",
-      "status": "NOT_STARTED"
+      "status": "IN_PROGRESS"
     },
     {
       "detail": "internal: NOT_STARTED; external: NOT_STARTED",
@@ -395,10 +395,10 @@
     "real_experiment_executed": false,
     "scientific_results_available": false,
     "statement": "Scientific results are not yet available. Experimental execution is pending.",
-    "status": "data_acquired_execution_pending",
+    "status": "execution_in_progress",
     "synthetic_demo_available": true,
     "synthetic_results_in_scientific_namespace": false,
-    "training_status": "NOT_STARTED"
+    "training_status": "IN_PROGRESS"
   },
   "timeline": [
     {

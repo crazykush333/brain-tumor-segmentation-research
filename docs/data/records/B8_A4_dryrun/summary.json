@@ -1,0 +1,93 @@
+{
+  "acceptance": {
+    "every_flagged_pair_decided": true,
+    "max_group_size": false,
+    "metadata_different_never_linked": false,
+    "no_site1_in_development": true,
+    "verified_groups_intact": true
+  },
+  "accepted": false,
+  "config_sha256": "8e3334f289ec0123aee45be46ff339e27b82e8b3ca218daea70d63c8611c450d",
+  "decisions": {
+    "DIFFERENT_PATIENT": 42738,
+    "SAME_PATIENT": 2,
+    "UNRESOLVED": 6728
+  },
+  "group_size_counts": {
+    "1": 258,
+    "10": 1,
+    "2": 5,
+    "3": 1,
+    "35": 1,
+    "374": 1,
+    "4": 1,
+    "46": 1
+  },
+  "independent_reconciliation": {
+    "decisions_identical": true,
+    "first_differences": [],
+    "groups_identical": true,
+    "n_decision_differences": 0,
+    "n_groups_independent": 269,
+    "n_groups_production": 269
+  },
+  "inputs_sha256": {
+    "crosswalk": "223243c5821c282e90da980ba38d860ab2d2a597d1f4f1800ebe227329a2dc0b",
+    "ucsf_metadata": "afc1c23a0eb0597b56e603741e72f2308b4860281187cd3808e05b7a0116fd78"
+  },
+  "largest_group": 374,
+  "median_group": 1,
+  "metadata_same_links": 2,
+  "n_development": 740,
+  "n_flagged": 49468,
+  "n_groups": 269,
+  "not_used": [
+    "image similarity",
+    "WT-Dice values",
+    "model predictions",
+    "split",
+    "validation/test results"
+  ],
+  "p95_group": 1,
+  "procedure": "v1.0-A4 metadata linkage (pre-split dry run)",
+  "rules": {
+    "M1": 2,
+    "M4": 5444,
+    "M5": 1773,
+    "M7": 35521,
+    "M8": 6728
+  },
+  "sensitivity": {
+    "cases_in_unresolved_pairs": 482,
+    "dev_cases_with_authoritative_identity": 497,
+    "dev_cases_without_authoritative_identity": 243,
+    "largest_group_by_collection": {
+      "UCSF-PDGM": 257,
+      "UCSF-PDGM_Additional": 117
+    },
+    "largest_group_sites": {
+      "18": 374
+    },
+    "metadata_same_pairs_beyond_verified_groups": [],
+    "unresolved_pairs": 6728,
+    "unresolved_pairs_by_site": {
+      "17": 4,
+      "18": 6314,
+      "2": 2,
+      "21": 133,
+      "22": 4,
+      "3": 27,
+      "4": 244
+    },
+    "without_identity_by_collection": {
+      "Collection 4": 30,
+      "Collection 5": 47,
+      "Collection 7": 4,
+      "Collection 9": 1,
+      "Collection1": 35,
+      "Collection3": 7,
+      "UCSF-PDGM_Additional": 119
+    }
+  },
+  "singletons": 258
+}

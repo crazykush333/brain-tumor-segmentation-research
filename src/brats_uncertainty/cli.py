@@ -314,6 +314,15 @@ def _cmd_build_nnunet_dataset(root: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_b8_a4_dryrun(root: Path, args: argparse.Namespace) -> int:
+    from brats_uncertainty.grouping.a4_dryrun import run
+
+    r = run(root, Path(args.crosswalk), Path(args.ucsf_metadata), root / args.out)
+    print({k: r[k] for k in ("decisions", "rules", "n_groups", "largest_group", "accepted")})
+    print("independent reconciliation:", r["independent_reconciliation"])
+    return 0 if r["accepted"] else 1
+
+
 def _cmd_audit_split(root: Path, args: argparse.Namespace) -> int:
     import json as _json
 
@@ -639,6 +648,13 @@ def build_parser() -> argparse.ArgumentParser:
     vm = sub.add_parser("validate-metrics", help="validate *.metrics.json result files")
     vm.add_argument("files", nargs="+")
     vm.set_defaults(func=_cmd_validate_metrics)
+    a4 = sub.add_parser(
+        "b8-a4-dryrun", help="pre-split dry run of the v1.0-A4 metadata linkage (no gate change)"
+    )
+    a4.add_argument("--crosswalk", required=True, help="BraTS2021_MappingToTCIA.xlsx (B3 hash)")
+    a4.add_argument("--ucsf-metadata", required=True, help="UCSF-PDGM-metadata_v5.csv (B4 hash)")
+    a4.add_argument("--out", default="docs/data/records/B8_A4_dryrun")
+    a4.set_defaults(func=_cmd_b8_a4_dryrun)
     au = sub.add_parser(
         "audit-split", help="independent B8-B12 leakage/provenance audit (committed IDs only)"
     )

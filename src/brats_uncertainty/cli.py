@@ -337,7 +337,7 @@ def _cmd_a5_identity_sweep(root: Path, args: argparse.Namespace) -> int:
     )
     out = root / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(_json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out.write_text(_json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     print(
         f"checked {r['n_checked_without_identity']}; newly resolved {r['n_newly_resolved']}; "
         f"remaining unresolved {r['n_remaining_unresolved']}"

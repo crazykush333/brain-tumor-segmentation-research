@@ -54,6 +54,7 @@ def _real_identity_repo(tmp_path: Path) -> Path:
     """Fake repo whose dataset identity is the real BraTS 2021 one (strongest negative test)."""
     root = make_verbatim_status_repo(tmp_path / "repo")
     shutil.copy(REPO_ROOT / "configs/dataset/brats2021.yaml", root / "configs/dataset/")
+    shutil.copy(REPO_ROOT / "configs/dataset/brats2021_crosswalk.yaml", root / "configs/dataset/")
     return root
 
 
@@ -235,9 +236,10 @@ def test_repository_scan_flags_synthetic_content_in_real_evidence_location(
 
 
 # ---------------------------------------------------------------- 5. production state
-def test_production_state_is_owner_approved_not_synthetic() -> None:
+def test_production_state_is_owner_approved_not_synthetic(pre_execution_root: Path) -> None:
     """SYNTHETIC TEST STATE never leaks into the REAL OWNER-APPROVED PRODUCTION STATE."""
-    st = load_status(REPO_ROOT)
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
+    st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
     assert st.gate("B2").status in (
         "AUTHORIZED",
@@ -248,9 +250,9 @@ def test_production_state_is_owner_approved_not_synthetic() -> None:
     assert st.raw["data"]["approved_route"] == OWNER_ROUTE
     assert SYNTHETIC_TEST_ONLY not in st.raw["data"]["approved_route"]
     assert st.raw["data"]["acquired"] is False
-    for p in (REPO_ROOT / "docs/data").glob("B1_EVIDENCE_2*"):
+    for p in (repo_root / "docs/data").glob("B1_EVIDENCE_2*"):
         text = p.read_text(encoding="utf-8")
         assert not is_synthetic_b1_text(text), p
         assert b1_source_class(text) == SOURCE_CLASS_OWNER, p
-    template = (REPO_ROOT / "docs/data/B1_EVIDENCE_TEMPLATE.md").read_text(encoding="utf-8")
+    template = (repo_root / "docs/data/B1_EVIDENCE_TEMPLATE.md").read_text(encoding="utf-8")
     assert SOURCE_CLASS_SYNTHETIC not in template and SYNTHETIC_TEST_ONLY not in template

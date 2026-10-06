@@ -131,9 +131,19 @@ def _write_synthetic_crosswalk(path: Path, n_site1: int, n_other: int) -> None:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = SYNTHETIC_LABEL
-    ws.append(["BraTS2021 ID", "Site ID", "Data Collection", "TCIA PatientID"])
+    ws.append(
+        [
+            "Data Collection (as on TCIA+additional)",
+            "Site ID",
+            "PatientID on TCIA Radiology Portal",
+            "BraTS2021 ID",
+            "Segmentation (Task 1) Cohort",
+        ]
+    )  # the official header layout (confirmed 2026-10-06); values are SYNTHETIC
     for i in range(n_site1 + n_other):
-        ws.append([f"SYN-{i:04d}", 1 if i < n_site1 else 18, SYNTHETIC_LABEL, f"SYN-P{i:04d}"])
+        site = 1 if i < n_site1 else 18
+        ws.append([SYNTHETIC_LABEL, site, f"SYN-P{i:04d}", f"SYN-{i:04d}", "Training"])
+    ws.append([SYNTHETIC_LABEL, 18, "SYN-PV", "SYN-VALIDATION", "Validation"])  # filtered out
     wb.properties.creator = SYNTHETIC_LABEL
     wb.save(path)
 

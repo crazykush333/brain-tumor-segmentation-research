@@ -45,7 +45,7 @@ from brats_uncertainty.data.stages import (
 )
 from brats_uncertainty.errors import DataValidationError, ProvenanceError, ResearchGateError
 from brats_uncertainty.evaluation.status import load_status
-from tests.conftest import FAKE_ROUTE, make_status_repo, make_verbatim_status_repo
+from tests.conftest import FAKE_ROUTE, dataset_cfg, make_status_repo, make_verbatim_status_repo
 from tests.fixtures.fake_evidence import fake_source, fake_stamp
 from tests.fixtures.nested_layout import (
     DEFAULT_TREE,
@@ -273,7 +273,7 @@ def test_nested_manifest_tampering_rejected(tmp_path: Path, mutate, msg: str) ->
 
 # ================================================================ synthetic stages (end to end)
 def _syn_cfg(repo_root: Path, tmp_path: Path) -> Path:
-    cfg = yaml.safe_load((repo_root / "configs/dataset/brats2021.yaml").read_text(encoding="utf-8"))
+    cfg = dataset_cfg(repo_root)
     cfg["layout"]["case_id_pattern"] = r"SYN-\d{4}"
     assert cfg["layout"]["tree"] == "nested_collections"  # same layout rule as the real config
     p = tmp_path / "cfg.yaml"
@@ -619,7 +619,8 @@ def test_storage_preflight_creates_nothing_and_cli_fails_when_short(tmp_path: Pa
 
 
 # ================================================================ real state untouched
-def test_real_state_b2_ready_and_not_executed(repo_root: Path) -> None:
+def test_real_state_b2_ready_and_not_executed(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
     assert st.gate("B2").status in ("AUTHORIZED", "RUNNING")  # RUNNING once the runner started it

@@ -50,6 +50,46 @@ def _norm_site(value: Any) -> str:
 
 
 REQUIRED_COLUMN_KEYS = ("case_id", "site_id", "collection", "tcia_subject_id")
+CROSSWALK_CONFIG_NAME = "brats2021_crosswalk.yaml"
+
+
+def crosswalk_config_files(dataset_config: str | Path) -> list[Path]:
+    """The dataset config plus the confirmed crosswalk mapping next to it (if present)."""
+    base = Path(dataset_config)
+    override = base.with_name(CROSSWALK_CONFIG_NAME)
+    return [base, override] if override.is_file() else [base]
+
+
+def load_crosswalk_config(dataset_config: str | Path) -> dict[str, Any]:
+    """``crosswalk`` section of the dataset config, overlaid by the confirmed mapping."""
+    from brats_uncertainty.utils.io import read_yaml
+
+    files = crosswalk_config_files(dataset_config)
+    cfg = dict(read_yaml(files[0])["crosswalk"])
+    if len(files) == 2:
+        confirmed = read_yaml(files[1]) or {}
+        cfg["columns"] = {**cfg.get("columns", {}), **confirmed.get("columns", {})}
+        cfg.update({k: v for k, v in confirmed.items() if k != "columns"})
+    return cfg
+
+
+def select_cohort(
+    records: Iterable[Mapping[str, Any]], crosswalk_cfg: Mapping[str, Any]
+) -> list[Mapping[str, Any]]:
+    """Keep the study population (protocol section 5: the BraTS 2021 training set).
+
+    The official crosswalk also lists validation and unassigned cases. When
+    ``cohort_column`` is configured, only rows whose value equals ``cohort_value``
+    are kept; a missing column fails closed.
+    """
+    records = list(records)
+    column = crosswalk_cfg.get("cohort_column")
+    if not column:
+        return records
+    value = str(crosswalk_cfg["cohort_value"])
+    if records and not any(column in r for r in records):
+        raise DataValidationError(f"crosswalk is missing the cohort column {column!r}")
+    return [r for r in records if str(r.get(column) or "").strip() == value]
 
 
 def parse_rows(

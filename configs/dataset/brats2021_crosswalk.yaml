@@ -1,0 +1,17 @@
+# Confirmed mapping of the official TCIA crosswalk BraTS2021_MappingToTCIA.xlsx (gate B6).
+# Kept separate from brats2021.yaml, whose hash is part of the B2-B5 execution records.
+# Confirmed on 2026-10-06 against the hashed file (SHA-256 223243c5821c282e..., B3 record):
+# one sheet "TCIA"; headers 'Data Collection (as on TCIA+additional)', 'Site ID',
+# 'PatientID on TCIA Radiology Portal', 'Study date (m/d/yyyy) per PatientID', 'BraTS2021 ID',
+# 'Segmentation (Task 1) Cohort', 'MGMT (Task 2) Cohort', 'MGMT value'.
+# The pre-freeze names of the collection and TCIA patient-ID columns were shortened.
+columns:
+  case_id: "BraTS2021 ID"
+  site_id: "Site ID"
+  collection: "Data Collection (as on TCIA+additional)"
+  tcia_subject_id: "PatientID on TCIA Radiology Portal"
+# The file also lists the BraTS 2021 validation (219) and unassigned (9) cases. The study
+# population is the BraTS 2021 training set (protocol section 5): the 1,251 rows with
+# this column equal to "Training" (site 1: 511; other sites: 740).
+cohort_column: "Segmentation (Task 1) Cohort"
+cohort_value: "Training"

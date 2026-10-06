@@ -83,7 +83,8 @@ GATED = [
 
 
 @pytest.mark.parametrize("argv", GATED, ids=[a[0] for a in GATED])
-def test_gated_script_refuses(repo_root: Path, argv: list[str]) -> None:
+def test_gated_script_refuses(pre_execution_root: Path, argv: list[str]) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     proc = subprocess.run(
         [sys.executable, *argv], cwd=repo_root, capture_output=True, text=True, timeout=120
     )

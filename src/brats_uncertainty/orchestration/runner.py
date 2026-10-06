@@ -81,6 +81,10 @@ def validate_order(steps: Sequence[Step]) -> None:
         seen.add(s.id)
 
 
+# steps that re-check the environment / session data in every session
+PER_SESSION = frozenset({"ENV", "DATA"})
+
+
 def plan(ctx: Context, steps: Sequence[Step], state: MasterState) -> dict[str, str]:
     """Statuses without executing anything (read-only)."""
     out: dict[str, str] = {}
@@ -92,7 +96,7 @@ def plan(ctx: Context, steps: Sequence[Step], state: MasterState) -> dict[str, s
             out[s.id] = FAILED
         elif any(out.get(d) != PASSED for d in s.needs):
             out[s.id] = LOCKED
-        elif rec is not None and rec.status == PASSED and not s.gate and s.id != "ENV":
+        elif rec is not None and rec.status == PASSED and not s.gate and s.id not in PER_SESSION:
             out[s.id] = PASSED
         else:
             out[s.id] = READY
@@ -158,7 +162,7 @@ def run(
         _record(state, s, outcome)
         save_state(ctx.state_dir, state)
         report.statuses[s.id] = outcome.status
-        if outcome.status == PASSED and not was_passed and s.id != "ENV":
+        if outcome.status == PASSED and not was_passed and s.id not in PER_SESSION:
             report.passed_now.append(s.id)
         if outcome.status in STOP_STATUSES:
             report.stops.append(_stop(s, outcome.summary, outcome.action_needed, outcome.status))

@@ -99,18 +99,21 @@ def test_demo_never_touches_real_data_locations(
     assert not any(os.sep + "raw" + os.sep in p for p in opened)
 
 
-def test_demo_cannot_close_gates(demo_pair: tuple[Path, Path], tmp_path: Path) -> None:
+def test_demo_cannot_close_gates(
+    pre_execution_root: Path, demo_pair: tuple[Path, Path], tmp_path: Path
+) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     from brats_uncertainty.evaluation.lifecycle import apply_transition
     from brats_uncertainty.evaluation.status import load_status, validate_status
 
-    raw = load_status(REPO_ROOT).raw
+    raw = load_status(repo_root).raw
     b2 = next(g for g in raw["gates"] if g["id"] == "B2")["status"]
     running = raw if b2 == "RUNNING" else apply_transition(raw, "B2", "RUNNING")
     passed = apply_transition(
         running, "B2", "PASSED", evidence="results/demo/synthetic_summary.json", on="2026-10-05"
     )
     with pytest.raises(ConfigError):
-        validate_status(passed, REPO_ROOT)  # not a committed, real B2 execution record
+        validate_status(passed, repo_root)  # not a committed, real B2 execution record
 
 
 def test_demo_cannot_be_exported_or_indexed_as_results(
@@ -136,19 +139,22 @@ def test_demo_cannot_be_exported_or_indexed_as_results(
         _results(repo, {"results": {"available": True}})
 
 
-def test_site_states_real_pending_and_demo(demo_pair: tuple[Path, Path], tmp_path: Path) -> None:
+def test_site_states_real_pending_and_demo(
+    pre_execution_root: Path, demo_pair: tuple[Path, Path], tmp_path: Path
+) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     import shutil
 
     from brats_uncertainty.results.site_export import build_site_data, results_status
 
-    data = build_site_data(REPO_ROOT)
+    data = build_site_data(repo_root)
     assert data["results.json"]["available"] is False  # real results: none
     raw = json.loads(json.dumps(data["status.json"]))
     assert raw["data"]["acquired"] is False
     status = results_status(
-        REPO_ROOT,
+        repo_root,
         __import__("brats_uncertainty.evaluation.status", fromlist=["x"])
-        .load_status(REPO_ROOT)
+        .load_status(repo_root)
         .raw,
     )
     assert (

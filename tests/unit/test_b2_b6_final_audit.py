@@ -61,6 +61,7 @@ from brats_uncertainty.utils.io import write_json
 from brats_uncertainty.utils.paths import is_link
 from tests.conftest import (
     FAKE_ROUTE,
+    dataset_cfg,
     make_status_repo,
     make_verbatim_status_repo,
     pending_raw,
@@ -326,7 +327,7 @@ def test_failed_manifest_csv_write_leaves_no_partial(
         clock=_clock,
     )
     assert isinstance(rec, AcquisitionRecord)
-    cfg = yaml.safe_load((repo_root / "configs/dataset/brats2021.yaml").read_text(encoding="utf-8"))
+    cfg = dataset_cfg(repo_root)
     cfg["layout"]["case_id_pattern"] = r"SYN-\d{4}"
     cfg["layout"]["tree"] = "flat"  # flat synthetic fixture (nested: test_nested_layout.py)
     cfg_path = tmp_path / "cfg.yaml"
@@ -732,9 +733,10 @@ def test_record_constructor_hash_shape_is_validated() -> None:
 
 
 def test_adapters_cannot_be_executed_directly_without_authorization(
-    repo_root: Path, tmp_path: Path
+    pre_execution_root: Path, tmp_path: Path
 ) -> None:
     """Calling adapter.execute() outside stage_acquire still enforces the B1/B2 gate."""
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     from brats_uncertainty.data.acquisition import HttpsFileAdapter
     from brats_uncertainty.errors import ResearchGateError
 

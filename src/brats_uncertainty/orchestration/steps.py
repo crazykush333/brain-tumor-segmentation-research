@@ -279,6 +279,70 @@ def _delivery_dir(ctx: Context) -> Path:
     return delivery
 
 
+def _fetch_metadata(ctx: Context, delivery: Path) -> None:
+    """The B3/B4 metadata files, byte-for-byte from their official URLs."""
+    for item in ctx.cfg["acquisition"]["metadata_files"]:
+        dest = delivery / item["name"]
+        if not dest.is_file():
+            if ctx.offline:
+                raise StepBlocked(
+                    f"B2: {item['name']} missing and the runner is offline",
+                    f"download it byte-for-byte from {item['url']} into {delivery}",
+                )
+            ctx.ops.fetch(item["url"], dest)
+
+
+def execute_session_data(ctx: Context) -> Outcome:
+    """Every session after B2: the study data must be present and byte-identical to the
+    committed B2 inventory. An ephemeral session (Kaggle) re-acquires them through the
+    recorded official route; nothing is rewritten and any difference fails closed."""
+    from brats_uncertainty.data.acquisition import LocalImportAdapter
+    from brats_uncertainty.data.records import SourceInfo, read_acquisition_record, verify_inventory
+
+    rec = read_acquisition_record(ctx.records / "B2.json")
+    n = len(rec.inventory)
+
+    def differences() -> dict[str, list[str]]:
+        return {k: v for k, v in verify_inventory(rec.inventory, ctx.raw_root).items() if v}
+
+    if ctx.raw_root.is_dir() and any(ctx.raw_root.iterdir()):
+        diff = differences()
+        if not diff:
+            return Outcome(PASSED, f"session data identical to the B2 inventory ({n} files)")
+        raise StepFailed(
+            "session data differ from the committed B2 inventory: "
+            + ", ".join(f"{k} {len(v)}" for k, v in diff.items()),
+            f"inspect {ctx.raw_root} (never edit the B2 record); clear it to re-acquire",
+            differences={k: v[:20] for k, v in diff.items()},
+        )
+    acq = ctx.cfg["acquisition"]
+    delivery = _delivery_dir(ctx)
+    _fetch_metadata(ctx, delivery)
+    source = SourceInfo(
+        dataset=acq["dataset"],
+        dataset_version=acq["dataset_version"],
+        doi=acq["doi"],
+        source_url=acq["source_url"],
+        route=acq["route"],
+    )
+    ctx.raw_root.mkdir(parents=True, exist_ok=True)
+    LocalImportAdapter(source, delivery).materialize(ctx.raw_root)
+    diff = differences()
+    if diff:
+        raise StepFailed(
+            "re-acquired data differ from the committed B2 inventory: "
+            + ", ".join(f"{k} {len(v)}" for k, v in diff.items()),
+            "the official files changed or the transfer was incomplete; do not proceed "
+            "(SR3 applies if the official release changed)",
+            differences={k: v[:20] for k, v in diff.items()},
+        )
+    return Outcome(
+        PASSED,
+        f"session data re-acquired via the recorded official route; identical to the B2 "
+        f"inventory ({n} files)",
+    )
+
+
 def _tree_bytes(root: Path) -> int:
     return sum(p.stat().st_size for p in root.rglob("*") if p.is_file())
 
@@ -309,15 +373,7 @@ def produce_b2(ctx: Context) -> list[Path]:
             "deliver exactly the official .sums file and the training set (official nested "
             "hierarchy, never flattened) into that folder",
         )
-    for item in acq["metadata_files"]:
-        dest = delivery / item["name"]
-        if not dest.is_file():
-            if ctx.offline:
-                raise StepBlocked(
-                    f"B2: {item['name']} missing and the runner is offline",
-                    f"download it byte-for-byte from {item['url']} into {delivery}",
-                )
-            ctx.ops.fetch(item["url"], dest)
+    _fetch_metadata(ctx, delivery)
     pre = storage_preflight(_tree_bytes(delivery), delivery_dir=delivery, storage_dir=ctx.raw_root)
     if not pre.ok:
         raise StepBlocked(
@@ -419,10 +475,28 @@ def produce_b6(ctx: Context) -> list[Path]:
 
 
 def crosswalk_rows(ctx: Context) -> list[Any]:
-    from brats_uncertainty.data.crosswalk import parse_rows, read_table_records
+    """Study-population crosswalk rows; must equal the received case set once B5 exists."""
+    from brats_uncertainty.data.crosswalk import (
+        load_crosswalk_config,
+        parse_rows,
+        read_table_records,
+        select_cohort,
+    )
+    from brats_uncertainty.errors import DataValidationError
 
-    cw = read_yaml(ctx.repo_root / DATASET_CONFIG)["crosswalk"]
-    return parse_rows(read_table_records(ctx.metadata_path("B3"), cw.get("sheet")), cw["columns"])
+    cw = load_crosswalk_config(ctx.repo_root / DATASET_CONFIG)
+    records = select_cohort(read_table_records(ctx.metadata_path("B3"), cw.get("sheet")), cw)
+    rows = parse_rows(records, cw["columns"])
+    manifest = ctx.records / "B5_manifest.json"
+    if manifest.is_file():
+        received = {str(f["case_id"]) for f in read_json(manifest)["files"] if f.get("case_id")}
+        listed = {r.case_id for r in rows}
+        if received != listed:
+            raise DataValidationError(
+                f"crosswalk cohort and received cases differ: {len(listed - received)} listed "
+                f"but not received, {len(received - listed)} received but not listed"
+            )
+    return rows
 
 
 def development_rows(ctx: Context) -> list[Any]:
@@ -858,10 +932,19 @@ def build_steps() -> list[Step]:
             job="JOB-01",
         ),
         Step(
+            "DATA",
+            "Session data present and identical to the B2 inventory (every session)",
+            "B",
+            ("B2",),
+            execute_session_data,
+            job="JOB-01",
+            milestone=False,
+        ),
+        Step(
             "B3",
             "SHA-256 of BraTS2021_MappingToTCIA.xlsx",
             "B",
-            ("B2",),
+            ("DATA",),
             b("B3", _metadata_producer("B3"), describe="crosswalk hash"),
             gate="B3",
         ),

@@ -28,13 +28,15 @@ def test_every_gated_action_is_blocked_before_b1(tmp_path: Path, action: str) ->
 
 
 @pytest.mark.parametrize("action", sorted(set(ACTION_REQUIREMENTS) - {"acquire_data"}))
-def test_every_action_beyond_b2_is_blocked_now(repo_root: Path, action: str) -> None:
+def test_every_action_beyond_b2_is_blocked_now(pre_execution_root: Path, action: str) -> None:
     """Real state: B1 PASSED (owner-approved alternative), B2 ready; everything else blocked."""
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     with pytest.raises(ResearchGateError, match="not authorized"):
         require_action(action, repo_root)
 
 
-def test_only_b2_acquisition_is_permitted_by_the_real_gates(repo_root: Path) -> None:
+def test_only_b2_acquisition_is_permitted_by_the_real_gates(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     assert check_action("acquire_data", repo_root) == []  # B2 AUTHORIZED, not executed
 
 
@@ -43,7 +45,8 @@ def test_unknown_action_rejected(repo_root: Path) -> None:
         check_action("train_on_test_set", repo_root)
 
 
-def test_current_status_matches_reported_state(repo_root: Path) -> None:
+def test_current_status_matches_reported_state(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     st = load_status(repo_root)
     assert st.headline == "Protocol v1.0 frozen. Experimental execution pending."
     assert all(st.gate(f"A{i}").status in ("CLOSED", "OWNER_WAIVED") for i in range(1, 10))
@@ -159,3 +162,11 @@ def test_experiment_invalid_ids_and_versions() -> None:
         ExperimentMetadata("EXP-001", "t", "PLANNED", "v0.5", [], []).validate()
     with pytest.raises(ConfigError):
         ExperimentMetadata("EXP-001", "t", "DONE", "v1.0", [], []).validate()
+
+
+def test_live_status_is_valid_and_every_closed_gate_is_evidenced(repo_root: Path) -> None:
+    """State-agnostic check of the real repository, however far the study has progressed."""
+    st = load_status(repo_root)  # validates schema, lifecycle and evidence rules
+    for g in st.gates.values():
+        if g.status in ("PASSED", "CLOSED"):
+            assert g.evidence and (repo_root / g.evidence).is_file(), g.id

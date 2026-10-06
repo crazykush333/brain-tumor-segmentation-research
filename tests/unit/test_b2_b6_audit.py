@@ -67,6 +67,7 @@ from brats_uncertainty.utils.hashing import sha256_bytes, sha256_file
 from brats_uncertainty.utils.io import write_json
 from tests.conftest import (
     FAKE_ROUTE,
+    dataset_cfg,
     make_status_repo,
     make_verbatim_status_repo,
 )
@@ -92,7 +93,7 @@ def _raw(root: Path) -> dict:  # type: ignore[type-arg]
 
 
 def _synthetic_config(tmp_path: Path, repo_root: Path) -> Path:
-    cfg = yaml.safe_load((repo_root / "configs/dataset/brats2021.yaml").read_text(encoding="utf-8"))
+    cfg = dataset_cfg(repo_root)
     cfg["layout"]["case_id_pattern"] = r"SYN-\d{4}"
     cfg["layout"]["tree"] = "flat"  # flat synthetic fixture (nested: test_nested_layout.py)
     p = tmp_path / "syn_cfg.yaml"
@@ -101,7 +102,8 @@ def _synthetic_config(tmp_path: Path, repo_root: Path) -> Path:
 
 
 # ----- A. B1 before real B2
-def test_A_real_acquisition_requires_b1(repo_root: Path, tmp_path: Path) -> None:
+def test_A_real_acquisition_requires_b1(pre_execution_root: Path, tmp_path: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     d = tmp_path / "d.bin"
     d.write_bytes(b"x")
     pending = make_verbatim_status_repo(tmp_path / "pending")  # pre-B1 baseline
@@ -218,7 +220,8 @@ def test_E_b5_evidence_must_link_to_b2_b3_b4(tmp_path: Path) -> None:
 
 
 # ----- F. B6 derives from the source
-def test_F_b6_requires_an_actual_source(repo_root: Path, tmp_path: Path) -> None:
+def test_F_b6_requires_an_actual_source(pre_execution_root: Path, tmp_path: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     ds = generate_synthetic_dataset(tmp_path / "syn", repo_root=repo_root, n_cases=1)
     stage_hash_metadata(
         repo_root,
@@ -516,7 +519,8 @@ def test_full_chain_transitions_in_fake_repo(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------- edge cases
-def test_malformed_status_fails_safely(repo_root: Path) -> None:
+def test_malformed_status_fails_safely(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     base = _raw(repo_root)
     for mutate, msg in [
         (lambda r: r.update(gates={"B1": "PENDING"}), "gates must be a list"),

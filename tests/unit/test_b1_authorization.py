@@ -58,7 +58,8 @@ def _without_line(text: str, field: str) -> str:
 # ---------------------------------------------------------------- real repository state
 # REAL OWNER-APPROVED PRODUCTION STATE (2026-10-01): B1 PASSED via the owner-approved
 # alternative (amendment v1.0-A1); no external provider evidence exists.
-def test_real_b1_is_owner_approved_with_no_external_authorization(repo_root: Path) -> None:
+def test_real_b1_is_owner_approved_with_no_external_authorization(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     st = load_status(repo_root)
     assert st.gate("B1").status == "PASSED"
     assert st.gate("B1").evidence == "docs/data/B1_EVIDENCE_2026-10-01.md"
@@ -81,7 +82,8 @@ def test_real_b1_is_owner_approved_with_no_external_authorization(repo_root: Pat
     assert "docs/research/protocol-amendments/2026-10-01_B1_data-route.md" in text
 
 
-def test_real_overview_shows_owner_approved_b1_and_ready_b2(repo_root: Path) -> None:
+def test_real_overview_shows_owner_approved_b1_and_ready_b2(pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     st = load_status(repo_root)
     rows = build_overview(st.raw, {g.id: g.status for g in st.gates.values()}, repo_root)
     b1 = next(r for r in rows if r["key"] == "b1")

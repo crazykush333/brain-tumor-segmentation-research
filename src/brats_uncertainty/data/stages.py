@@ -29,7 +29,13 @@ from brats_uncertainty.data.checksums import (
     parse_checksum_file,
     verify_checksums,
 )
-from brats_uncertainty.data.crosswalk import parse_rows, read_table_records
+from brats_uncertainty.data.crosswalk import (
+    crosswalk_config_files,
+    load_crosswalk_config,
+    parse_rows,
+    read_table_records,
+    select_cohort,
+)
 from brats_uncertainty.data.integrity import IntegrityReport, validate_dataset_tree
 from brats_uncertainty.data.manifest_doc import build_raw_manifest, manifest_to_csv
 from brats_uncertainty.data.records import (
@@ -371,9 +377,10 @@ def stage_derive_counts(
     }
     if targets != B6_TARGETS:
         raise ProvenanceError("protocol mirror counts differ from the B6 targets")
+    cw = load_crosswalk_config(dataset_config)
     rows = parse_rows(
-        read_table_records(crosswalk, cfg["crosswalk"].get("sheet")),
-        cfg["crosswalk"]["columns"],
+        select_cohort(read_table_records(crosswalk, cw.get("sheet")), cw),
+        cw["columns"],
         case_id_pattern=cfg["layout"]["case_id_pattern"],
     )
     hoi = [r.case_id for r in rows if r.site_id == hoi_site]
@@ -409,7 +416,7 @@ def stage_derive_counts(
         stamp=make_stamp(
             repo_root,
             require_clean_commit=require_clean_commit and not synthetic,
-            config_files=[dataset_config],
+            config_files=crosswalk_config_files(dataset_config),
             clock=clock,
         ),
     )

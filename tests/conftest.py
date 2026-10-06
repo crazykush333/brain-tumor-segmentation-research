@@ -66,6 +66,9 @@ def _copy_basics(tmp_path: Path) -> None:
     }
     (tmp_path / "configs/dataset").mkdir(parents=True, exist_ok=True)
     (tmp_path / "configs/dataset/brats2021.yaml").write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    shutil.copy(
+        REPO_ROOT / "configs/dataset/brats2021_crosswalk.yaml", tmp_path / "configs/dataset/"
+    )
 
 
 def make_status_repo(tmp_path: Path, closed: set[str]) -> Path:
@@ -105,3 +108,51 @@ def make_verbatim_status_repo(tmp_path: Path) -> Path:
     _copy_basics(tmp_path)
     shutil.copy(PENDING_STATUS, tmp_path / "docs/project_status.yaml")
     return tmp_path
+
+
+def dataset_cfg(repo_root: Path) -> dict:  # type: ignore[type-arg]
+    """The real dataset config with the confirmed crosswalk mapping merged in (for
+    synthetic configs written to a temporary path without the mapping file beside them)."""
+    from brats_uncertainty.data.crosswalk import load_crosswalk_config
+
+    path = repo_root / "configs/dataset/brats2021.yaml"
+    cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+    cfg["crosswalk"] = load_crosswalk_config(path)
+    return cfg  # type: ignore[no-any-return]
+
+
+PRE_EXECUTION_STATUS = Path(__file__).parent / "fixtures/pre_execution/project_status.yaml"
+_MIRROR_IGNORE = shutil.ignore_patterns(
+    ".git",
+    "node_modules",
+    ".next",
+    "out",
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    "*.egg-info",
+)
+
+
+@pytest.fixture(scope="session")
+def pre_execution_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A non-git mirror of the repository frozen at its pre-execution state.
+
+    ``docs/project_status.yaml`` is the exact file of commit 724d181 (B1 PASSED, B2
+    AUTHORIZED, B3-B12 LOCKED, no data acquired), the B2-B6 execution records are
+    absent and the website data are regenerated from that status. Lifecycle-rule tests
+    use it so they do not depend on how far the real study has progressed; the live
+    state is checked by the state-agnostic validation tests.
+    """
+    from brats_uncertainty.results.site_export import export_site_data
+
+    root = tmp_path_factory.mktemp("pre_execution") / "repo"
+    shutil.copytree(REPO_ROOT, root, ignore=_MIRROR_IGNORE)
+    shutil.copy(PRE_EXECUTION_STATUS, root / "docs/project_status.yaml")
+    for rec in (root / "docs/data/records").glob("*"):
+        if rec.name.startswith(("B2", "B3", "B4", "B5", "B6", "B7")):
+            shutil.rmtree(rec) if rec.is_dir() else rec.unlink()
+    export_site_data(root)
+    return root

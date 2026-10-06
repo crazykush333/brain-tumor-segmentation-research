@@ -50,6 +50,7 @@ from brats_uncertainty.orchestration.steps import (
     Context,
     Step,
     StepBlocked,
+    StepFailed,
     build_steps,
     execute_d1,
     gate_step_executor,
@@ -220,7 +221,8 @@ def test_unexpected_exception_is_reported_as_possible_bug(tmp_path: Path) -> Non
     assert rep.statuses["Z"] == FAILED and "possible bug" in rep.stops[0]["blocker"]
 
 
-def test_registry_order_and_plan_on_real_status(tmp_path: Path) -> None:
+def test_registry_order_and_plan_on_real_status(pre_execution_root: Path, tmp_path: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     steps = build_steps()
     validate_order(steps)
     ids = [s.id for s in steps]
@@ -231,11 +233,11 @@ def test_registry_order_and_plan_on_real_status(tmp_path: Path) -> None:
         validate_order([Step("B", "b", "x", ("A",), ok("B")), Step("A", "a", "x", (), ok("A"))])
     from brats_uncertainty.orchestration.steps import RealOps
 
-    cfg = load_master_config(REPO_ROOT)
+    cfg = load_master_config(repo_root)
     real = RealOps(
-        REPO_ROOT, cfg, commit=False, push=False, environ={}, work_dir=tmp_path, offline=True
+        repo_root, cfg, commit=False, push=False, environ={}, work_dir=tmp_path, offline=True
     )
-    ctx = make_ctx(tmp_path, repo_root=REPO_ROOT)
+    ctx = make_ctx(tmp_path, repo_root=repo_root)
     ctx.ops = real
     statuses = plan(ctx, steps, MasterState.new())
     assert statuses["B2"] == LOCKED  # ENV has not run in an empty journal
@@ -623,3 +625,71 @@ def test_fetch_official_file_is_restricted_and_byte_exact(tmp_path: Path) -> Non
             fetch_official_file(bad, tmp_path / "y.csv", official_prefixes=prefixes)
     with pytest.raises(FileExistsError):
         fetch_official_file(url, out, official_prefixes=prefixes)
+
+
+# ============================================================ DATA: per-session restore
+def _fake_delivery(root: Path, cfg: dict[str, Any]) -> None:
+    acq = cfg["acquisition"]
+    (root / acq["training_set"] / "SYNTH-COLL" / "BraTS2021_99999").mkdir(parents=True)
+    (root / acq["training_set"] / "SYNTH-COLL" / "BraTS2021_99999" / "x_flair.nii.gz").write_bytes(
+        b"SYNTHETIC image"
+    )
+    (root / acq["sums_file"]).write_bytes(b"SYNTHETIC sums")
+    for item in acq["metadata_files"]:
+        (root / item["name"]).write_bytes(b"SYNTHETIC metadata")
+
+
+def test_session_data_restore_verifies_against_the_b2_inventory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from types import SimpleNamespace
+
+    from brats_uncertainty.data import records
+    from brats_uncertainty.orchestration.runner import PER_SESSION
+    from brats_uncertainty.orchestration.steps import execute_session_data
+
+    delivery = tmp_path / "official_delivery"
+    cfg = load_master_config(REPO_ROOT)
+    _fake_delivery(delivery, cfg)
+    expected = records.inventory(delivery)  # what B2 recorded for this (SYNTHETIC) delivery
+    monkeypatch.setattr(
+        records, "read_acquisition_record", lambda p: SimpleNamespace(inventory=expected)
+    )
+    ops = FakeOps()
+    ctx = make_ctx(tmp_path, ops, environ={"BRATS_OFFICIAL_DELIVERY": str(delivery)})
+    assert (
+        "DATA" in PER_SESSION
+        and [s.id for s in build_steps()].index("DATA")
+        == [s.id for s in build_steps()].index("B2") + 1
+    )
+    first = execute_session_data(ctx)  # fresh session: re-acquire (route B delivery) + verify
+    assert first.status == PASSED and "re-acquired" in first.summary
+    assert not records.verify_inventory(expected, ctx.raw_root)["missing"]
+    again = execute_session_data(ctx)  # data present: verify only
+    assert again.status == PASSED and "identical" in again.summary
+    assert not [c for c in ops.calls if c[0] in ("run", "fetch")]  # nothing re-run or fetched
+    victim = next(p for p in ctx.raw_root.rglob("*.nii.gz"))
+    victim.write_bytes(b"SYNTHETIC tampered")
+    with pytest.raises(StepFailed, match="differ from the committed B2 inventory"):
+        execute_session_data(ctx)
+
+
+def test_session_data_restore_fails_closed_when_the_official_files_changed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from types import SimpleNamespace
+
+    from brats_uncertainty.data import records
+    from brats_uncertainty.orchestration.steps import execute_session_data
+
+    delivery = tmp_path / "official_delivery"
+    cfg = load_master_config(REPO_ROOT)
+    _fake_delivery(delivery, cfg)
+    expected = records.inventory(delivery)
+    (delivery / cfg["acquisition"]["sums_file"]).write_bytes(b"SYNTHETIC changed upstream")
+    monkeypatch.setattr(
+        records, "read_acquisition_record", lambda p: SimpleNamespace(inventory=expected)
+    )
+    ctx = make_ctx(tmp_path, environ={"BRATS_OFFICIAL_DELIVERY": str(delivery)})
+    with pytest.raises(StepFailed, match="re-acquired data differ"):
+        execute_session_data(ctx)

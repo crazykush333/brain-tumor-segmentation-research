@@ -171,6 +171,14 @@ class LocalImportAdapter(AcquisitionAdapter):
         )
         return AcquisitionPlan(self.name, self.source, False, items, notes)
 
+    def materialize(self, storage_root: Path) -> None:
+        """Copy the delivery into ``storage_root`` without writing any record.
+
+        Used only to restore an ephemeral session's data after gate B2 has PASSED; the
+        caller must then verify the tree against the committed B2 inventory.
+        """
+        self._materialize(Path(storage_root))
+
     def _materialize(self, storage_root: Path) -> None:
         # fail closed before copying anything if the storage drive is too small
         require_free_space(storage_root, self.required_bytes(), reserve_bytes=IMPORT_RESERVE_BYTES)

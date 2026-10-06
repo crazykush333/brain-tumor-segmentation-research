@@ -1,0 +1,8 @@
+{
+  "max_group_size": 2,
+  "n_cases": 497,
+  "n_groups": 495,
+  "n_multi_case_groups": 2,
+  "procedure": "identity_clean_v1.0-A5",
+  "source": "cohort.csv"
+}

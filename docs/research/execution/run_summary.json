@@ -5,17 +5,17 @@
   },
   "gates": {
     "B1": "PASSED",
-    "B10": "LOCKED",
-    "B11": "LOCKED",
-    "B12": "LOCKED",
+    "B10": "PASSED",
+    "B11": "PASSED",
+    "B12": "PASSED",
     "B2": "PASSED",
     "B3": "PASSED",
     "B4": "PASSED",
     "B5": "PASSED",
     "B6": "PASSED",
     "B7": "PASSED",
-    "B8": "RUNNING",
-    "B9": "LOCKED",
+    "B8": "PASSED",
+    "B9": "PASSED",
     "C1": "NOT_STARTED",
     "C2": "NOT_STARTED",
     "C3": "NOT_STARTED",
@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "0f3672c04bc3c1ea152721c4929ef6c7c84a0241",
+  "git_commit": "a41a0256485a28c66023b7f8695c1c30d0299393",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -42,22 +42,36 @@
   "resumes": 0,
   "schema_version": 1,
   "sessions": 1,
-  "split_hashes": null,
+  "split_hashes": {
+    "gate": "B12",
+    "partition_counts": {
+      "internal_test": 100,
+      "train": 347,
+      "validation": 50
+    },
+    "partition_id_list_sha256": {
+      "internal_test": "00b610dfcbd72fa8ca578a2c385757bfe28628db71b2d8c905448324cf3b55ae",
+      "train": "65b1ad6c4683c4211c0f43454d9da1e3206246dbffd975f2ac2f7775a39f48e2",
+      "validation": "f0a8846469d55f22f1694101891972f15e334ccdc6cd8172dd4a3d14aa5adc50"
+    },
+    "patient_groups_dev_csv_sha256": "95613f848190832b7869bd7992ee198a69f516801dc5caa002d6e7e6e590e7d7",
+    "split_all_csv_sha256": "393726596f1f34011d14f3e0e2daf543f09a7ee36501e687a6bddd6cd0d60005"
+  },
   "steps": {
     "B10": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B10 PASSED: final split"
     },
     "B11": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B11 PASSED: split assertions"
     },
     "B12": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B12 PASSED: split hashes"
     },
     "B2": {
       "attempts": 0,
@@ -91,13 +105,13 @@
     },
     "B8": {
       "attempts": 1,
-      "status": "REVIEW_REQUIRED",
-      "summary": "B8 automated adjudication failed its pre-specified acceptance criteria: ['controls_above_tau_neg', 'max_group_size']"
+      "status": "PASSED",
+      "summary": "B8 PASSED: manual review record"
     },
     "B9": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "B9 PASSED: frozen patient groups"
     },
     "C1": {
       "attempts": 1,
@@ -115,9 +129,9 @@
       "summary": ""
     },
     "C4": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "REVIEW_REQUIRED",
+      "summary": "C4: 19765 flagged HOI pair(s) need the frozen §6.2 manual review"
     },
     "C5": {
       "attempts": 0,

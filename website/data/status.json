@@ -173,7 +173,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B12",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Split hashes recorded"
     },
     {
@@ -351,7 +351,7 @@
       "detail": "split hashes recorded",
       "key": "b12",
       "label": "B12 Split hashes",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "arms A/B x seeds 0-2",

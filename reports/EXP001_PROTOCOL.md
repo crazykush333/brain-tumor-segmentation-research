@@ -10,7 +10,13 @@ This document only reads the configuration; it changes nothing.
 - `src/brats_uncertainty/models/nnunet.py`;
 - `src/brats_uncertainty/models/nnunet_trainers.py`.
 
-**Execution status (2026-10-06): not run.** EXP-001 requires gates D3–D6 and a GPU session, and the frozen split (B8–B12) has not been created yet.
+**Execution status (2026-10-07): run.** EXP-001 ran on Kaggle (Tesla T4) after the verified A5 split. The measurements are in `results/EXP-001/`, and gates D3–D5 are closed. Main results:
+- median epoch 248.26 s;
+- projected 19.41 GPU-h per run and 125.71 GPU-h in total, so SR1 and SR6 do not apply and 250 epochs stand.
+
+The first R1 resume test was invalid because of a harness defect: the child process's output was block-buffered. R1 is re-run once in the next session. D6 closes only after R1 passes (`docs/research/execution/D6_OWNER_DECISION.yaml`).
+
+An earlier attempt failed at start-up because of a trainer-signature defect (`KeyError: 'args'`). It produced no measurements and has been fixed.
 
 ## 1. EXP-001 is a compute pilot, not an accuracy experiment
 

@@ -43,6 +43,20 @@ acquisition:                          # gate B2, approved route only (amendment 
       gate: B4
       source_url: "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/"
 
+platform_observed:                    # SR8: limits read by the operator, not measurable by the runner
+  kaggle:
+    quota_h_week: 30
+    session_limit_h: 12
+    source: "Kaggle accelerator dialog, 2026-10-06 ('Availability is limited to 30 hours per week'); Kaggle 12-hour notebook session limit (remote_compute.yaml planning_limits)"
+
+session:                              # hosted-session limits (compute.session); no design change
+  kaggle:
+    budget_h: 11.0                    # stop training this long after the runner starts (12 h limit)
+    min_start_h: 1.0                  # never start/resume a run with less left
+    stop_margin_h: 0.5                # stop after the next checkpoint within this margin
+    persist_dir: /kaggle/working/persist   # private notebook output (no raw data)
+    restore_notebook: ayushkushwaha123/brats-99-master-pipeline   # previous version's output
+
 review:                               # gate B8 (protocol section 6.2)
   # Amendment v1.0-A5 (2026-10-06): identity-clean primary cohort and quarantine
   # (configs/grouping/b8_identity_clean_v1.0-A5.yaml). v1.0-A3 failed and is withdrawn.

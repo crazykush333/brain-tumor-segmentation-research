@@ -132,6 +132,25 @@ def test_execute_pilot_end_to_end_with_fakes(
     assert all(int(x.split("_")[1]) < 60 for x in c["pilot_cases"])  # no site-1 case (D3/D5)
     assert ss.execute_pilot(ctx).summary == "EXP-001 measurements recorded"  # never re-run
 
+    # a failed R1 (harness defect) is re-run once; nothing else is re-measured
+    m["projection_inputs"]["resume_pass"] = m["spec_quantities"]["resume_pass"] = False
+    m["projection_inputs"]["platform"] = "kaggle"
+    (exp / "measurements.json").write_text(json.dumps(m), encoding="utf-8")
+    first_r1 = {"resume_pass": False, "completed": True, "resumed_at_epoch": None}
+    (exp / "resume_check.json").write_text(json.dumps(first_r1), encoding="utf-8")
+    out = ss.execute_pilot(ctx)
+    assert out.status == "PASSED" and "resume_pass=True" in out.summary
+    r1 = json.loads((exp / "resume_check.json").read_text(encoding="utf-8"))
+    assert (
+        r1["resume_pass"] and r1["rerun_of"] == first_r1 and "block-buffered" in r1["rerun_reason"]
+    )
+    m2 = json.loads((exp / "measurements.json").read_text(encoding="utf-8"))
+    assert m2["projection_inputs"]["resume_pass"] is True
+    assert m2["projection_inputs"]["median_epoch_s"] == 100.5  # timings untouched
+    assert m2["projection_inputs"]["quota_h_week"] == 30.0  # SR8: observed platform limit
+    assert "quota_h_week" not in m2["not_measurable_on_platform"]
+    assert ss.execute_pilot(ctx).summary == "EXP-001 measurements recorded"  # only once
+
 
 class CrashingRunner(FakeRunner):
     """Preprocessing succeeds; every training process crashes at start-up."""
@@ -349,3 +368,19 @@ def test_write_units_refuses_mixed_sets(tmp_path: Path) -> None:
     ]
     with pytest.raises(DataValidationError, match="one dataset and one arm"):
         write_units(tmp_path / "u.csv", rows)
+
+
+def test_d6_owner_proceed_never_waives_a_failed_acceptance_check(tmp_path: Path) -> None:
+    ops = FakeOps(gates={"D6": "NOT_STARTED"})
+    ctx = make_ctx(tmp_path, ops)
+    _measurements(ctx, unmeasurable=["p100_epoch_time_s"])
+    m = ctx.repo_root / ctx.cfg["paths"]["exp001_dir"] / "measurements.json"
+    body = json.loads(m.read_text(encoding="utf-8"))
+    body["projection_inputs"]["resume_pass"] = False
+    m.write_text(json.dumps(body), encoding="utf-8")
+    dec = ctx.repo_root / ss.D6_DECISION
+    dec.parent.mkdir(parents=True, exist_ok=True)
+    dec.write_text("decision: PROCEED\nepochs: 250\nreason: SYNTHETIC\n", encoding="utf-8")
+    with pytest.raises(StepReview, match="does not waive"):
+        ss.execute_d6(ctx)
+    assert ops.gates["D6"] == "NOT_STARTED"

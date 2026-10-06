@@ -19,6 +19,7 @@ from __future__ import annotations
 import csv
 import shlex
 import shutil
+import time
 import traceback
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -104,6 +105,7 @@ class Context:
     process_runner: Any = None  # EXP-001 process runner (default: real subprocesses)
     ensemble_factory: Any = None  # (kind, arm, cases) -> EnsembleSource (default: nnU-Net)
     today: str = field(default_factory=lambda: datetime.now(UTC).date().isoformat())
+    session_started: float = field(default_factory=time.time)  # this runner invocation
 
     @property
     def records(self) -> Path:
@@ -1098,7 +1100,28 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         epochs = planned_epochs(ctx)  # 250, or 150 under SR1/SR6 (D6)
         results_root = ctx.work_dir / "nnunet_results"
         run_dir = run_namespace(results_root, job.experiment_id, job.run)
+        settings = restore_session_runs(ctx)
+        committed = _published_manifest(ctx, job.experiment_id, run_dir)
         manifest = read_manifest(run_dir)
+        if manifest is None and committed is not None:
+            raise StepBlocked(
+                f"{job_id}: an earlier session ran this job (status {committed['status']}) but "
+                "its run directory was not restored in this session",
+                "restore the previous session's output (session.restore_notebook / "
+                "BRATS_RESTORE_DIR) and re-run --resume; a run is never restarted silently",
+            )
+        if (
+            manifest is not None
+            and committed is not None
+            and (manifest.get("checkpoint") or {}).get("sha256")
+            != (committed.get("checkpoint") or {}).get("sha256")
+        ):
+            raise StepBlocked(
+                f"{job_id}: the restored run state is not the latest committed one (checkpoint "
+                "SHA-256 differs from results/.../run_manifest.json)",
+                "restore the output of the session that committed that manifest; a run never "
+                "resumes from an older checkpoint silently",
+            )
         if manifest and manifest["status"] == "COMPLETED":
             _publish_run_manifest(ctx, job.experiment_id, run_dir)
             return Outcome(PASSED, f"{job_id} COMPLETED", evidence=[str(run_dir.name)])
@@ -1120,6 +1143,15 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
                     f"{job_id} (recorded in the run manifest)",
                 )
         require_confirmations(ctx, job_id.replace("JOB", "TRAIN"))
+        deadline = (
+            ctx.session_started + settings.budget_s if settings.budget_s is not None else None
+        )
+        if deadline is not None and deadline - time.time() < settings.min_start_s:
+            raise StepBlocked(
+                f"{job_id}: too little of this session's time budget is left to start or "
+                "resume a run",
+                "the next session resumes it (run the master runner again with --resume)",
+            )
         _set_status(
             ctx,
             {("training", "status"): "IN_PROGRESS"},
@@ -1132,7 +1164,13 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         b5 = read_json(ctx.records / "B5_manifest.json")
         hashes = read_json(ctx.splits / "split_hashes.json")
         from brats_uncertainty.compute.jobs import run_training_job
+        from brats_uncertainty.compute.session import DeadlineRunner, persist_run
 
+        runner = (
+            DeadlineRunner(deadline, run_dir, stop_margin_s=settings.stop_margin_s)
+            if deadline is not None
+            else None
+        )
         rec = run_training_job(
             ctx.repo_root,
             job,
@@ -1144,25 +1182,73 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
             resume=resume,
             restart_without_checkpoint=restart,
             epochs=epochs,
+            runner=runner,
         )
+        if settings.persist_dir is not None:
+            persist_run(run_dir, results_root, settings.persist_dir)
+        _publish_run_manifest(ctx, job.experiment_id, run_dir)  # committed at the milestone
+        if rec["status"] != "COMPLETED" and runner is not None and runner.stopped_at_deadline:
+            raise StepBlocked(
+                f"{job_id}: paused at this session's time budget (checkpoint "
+                f"{(rec.get('checkpoint') or {}).get('path')}, saved to session output)",
+                "the next session restores it and resumes from the verified checkpoint "
+                "(run the master runner again with --resume)",
+            )
         if rec["status"] != "COMPLETED":
             raise StepBlocked(
                 f"{job_id}: run {rec['status']} after attempt {len(rec['attempts'])}",
                 "re-run with --resume: the run continues from its own verified checkpoint "
                 "(never from scratch silently)",
             )
-        _publish_run_manifest(ctx, job.experiment_id, run_dir)  # committed at the milestone
         return Outcome(PASSED, f"{job_id} COMPLETED", evidence=[run_dir.name])
 
     return execute
 
 
+SESSION_RESTORE_MARKER = "session_restore.json"
+
+
+def restore_session_runs(ctx: Context) -> Any:
+    """Once per session: restore run directories from the previous session's output."""
+    from brats_uncertainty.compute.probe import detect_environment
+    from brats_uncertainty.compute.session import (
+        find_restore_source,
+        restore_runs,
+        session_settings,
+    )
+
+    settings = session_settings(ctx.cfg, detect_environment(ctx.environ), ctx.environ)
+    marker = ctx.work_dir / SESSION_RESTORE_MARKER
+    if marker.is_file():
+        return settings
+    source = find_restore_source(settings)
+    restored = (
+        restore_runs(source, ctx.work_dir / "nnunet_results", settings.persist_dir)
+        if source is not None
+        else []
+    )
+    if restored:
+        print(f"session restore: {len(restored)} run director(ies) restored from {source}")
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    write_json(marker, {"source": str(source) if source else None, "restored": restored})
+    return settings
+
+
+def _published_manifest(ctx: Context, experiment: str, run_dir: Path) -> dict[str, Any] | None:
+    p = ctx.repo_root / "results" / experiment / "runs" / run_dir.name / "run_manifest.json"
+    return read_json(p) if p.is_file() else None
+
+
 def _publish_run_manifest(ctx: Context, experiment: str, run_dir: Path) -> None:
+    """Publish and commit the run manifest at once: the next training run needs a clean
+    checkout, and the next session compares its restored state with this record."""
     src = run_dir / "run_manifest.json"
     if src.is_file():
         dest = ctx.repo_root / "results" / experiment / "runs" / run_dir.name / "run_manifest.json"
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest)
+        status = read_json(src).get("status")
+        ctx.ops.milestone(f"data({experiment}): {run_dir.name} run manifest ({status})")
 
 
 def _ensure_nnunet_dataset(ctx: Context) -> tuple[int, Path]:

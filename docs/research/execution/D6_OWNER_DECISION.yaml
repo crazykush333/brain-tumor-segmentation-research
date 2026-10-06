@@ -1,0 +1,28 @@
+# Gate D6 (SR1 / SR6 / SR8) decision after EXP-001.
+# Read by brats_uncertainty.orchestration.study_steps (execute_d6, planned_epochs).
+# A PROCEED never waives a failed EXP-001 acceptance check (resume correctness, memory fit):
+# D6 closes only after the R1 resume test has passed.
+decision: PROCEED
+epochs: 250
+date: '2026-10-07'
+recorded_for: Ayush Kushwaha (owner)
+authority: >-
+  Owner's written instruction of 2026-10-06 (OPTION A5 run order): after verified B12 run
+  EXP-001, then "proceed to the six real training runs" (arm A standard nnU-Net and arm B
+  modality-dropout nnU-Net, 3 seeds each, 250 epochs), following the exact frozen training
+  configuration.
+basis: >-
+  EXP-001 (Kaggle, Tesla T4, results/EXP-001/measurements.json): median epoch 248.26 s,
+  overhead 12.6 %, peak GPU memory 9.81 GB (default plan fits), inference 3.41 s per
+  case-condition. Frozen projection: 19.41 GPU-h per run (<= 25, SR1 not triggered),
+  125.71 GPU-h in total (<= 220, no SR6 step). The frozen rules therefore keep 250 epochs.
+unmeasurable_on_platform: >-
+  P100 epoch time (no P100 offered: the platform offers GPU T4 x2 or TPU only) and the
+  concurrent two-GPU throughput (P3) were not measured. The projection does not use them:
+  it assumes one GPU per run with no concurrency gain, the conservative case.
+sr8_platform: >-
+  Kaggle: 30 GPU-h per week (accelerator dialog, 2026-10-06) and 12-h sessions. A run
+  (19.4 GPU-h) spans two sessions: training stops after a checkpoint before the session
+  budget, the run directory is kept in private notebook output and restored, verified by
+  SHA-256, in the next session (compute.session). About 126 GPU-h is about 4.2 weeks of
+  quota on this platform.

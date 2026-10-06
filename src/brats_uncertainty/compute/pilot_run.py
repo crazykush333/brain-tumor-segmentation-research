@@ -47,6 +47,12 @@ class ProcessRunner(Protocol):
     ) -> None: ...
 
 
+def _child_env(env: Mapping[str, str]) -> dict[str, str]:
+    """Child environment. Output is unbuffered: the log is read while the process runs
+    (R1 kills after N logged epochs), and a block-buffered log shows no epoch until exit."""
+    return {**os.environ, **env, "PYTHONUNBUFFERED": "1"}
+
+
 class SubprocessRunner:  # pragma: no cover - launches real processes
     def run(self, cmd: Sequence[str], env: Mapping[str, str], log: Path) -> tuple[int, float]:
         log.parent.mkdir(parents=True, exist_ok=True)
@@ -54,7 +60,7 @@ class SubprocessRunner:  # pragma: no cover - launches real processes
         with log.open("w", encoding="utf-8") as fh:
             code = subprocess.run(
                 list(cmd),
-                env={**os.environ, **env},
+                env=_child_env(env),
                 stdout=fh,
                 stderr=subprocess.STDOUT,
                 check=False,
@@ -68,7 +74,7 @@ class SubprocessRunner:  # pragma: no cover - launches real processes
         log.parent.mkdir(parents=True, exist_ok=True)
         with log.open("w", encoding="utf-8") as fh:
             proc = subprocess.Popen(
-                list(cmd), env={**os.environ, **env}, stdout=fh, stderr=subprocess.STDOUT
+                list(cmd), env=_child_env(env), stdout=fh, stderr=subprocess.STDOUT
             )
             try:
                 while proc.poll() is None:

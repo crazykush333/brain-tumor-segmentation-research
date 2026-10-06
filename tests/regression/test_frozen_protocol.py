@@ -142,6 +142,10 @@ def test_no_numeric_results_in_results_tree(repo_root: Path) -> None:
             # B8 identity and B8-B12 split verification: IDs, counts, hashes; no result values
             text = p.read_text(encoding="utf-8")
             assert "AURC" not in text and "Dice" not in text, rel
+        elif rel.startswith("results/MAIN/runs/") and rel.endswith("/run_manifest.json"):
+            # training provenance (identity, attempts, checkpoint hashes): no metric values
+            text = p.read_text(encoding="utf-8").lower()
+            assert "dice" not in text and "aurc" not in text, rel
         elif rel.startswith("results/EXP-001/"):
             # EXP-001 compute measurements (D4): no label-based metric may appear
             text = p.read_text(encoding="utf-8").lower()

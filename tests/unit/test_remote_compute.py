@@ -538,3 +538,50 @@ def test_amendment_list_excludes_administrative_entries(repo_root: Path) -> None
     assert (
         repo_root / "docs/research/protocol-amendments/2026-10-01_compute-environment.md"
     ).is_file()
+
+
+def test_resume_survives_a_new_session_at_another_commit(tmp_path: Path) -> None:
+    """A hosted session rebuilds the converted dataset at the runner's current commit;
+    the run identity uses the record's content, so the run resumes (and still fails
+    closed when the content differs)."""
+    job = load_jobs(REPO_ROOT)["JOB-02"]
+    run_dir = tmp_path / "res" / "MAIN" / "arm_a_seed_0"
+
+    def prov(commit: str, n_cases: int = 2) -> Path:
+        p = tmp_path / f"prov_{commit}_{n_cases}.json"
+        body = {
+            "kind": "nnunet_raw_dataset_conversion",
+            "data_class": "SYNTHETIC_TEST_DATA",
+            "git_commit": commit,
+            "n_cases": n_cases,
+        }
+        p.write_text(json.dumps(body), encoding="utf-8")
+        return p
+
+    def stops(cmd: list[str], env: dict[str, str]) -> int:
+        _ckpt(run_dir, "checkpoint_latest.pth")
+        return 1
+
+    def finishes(cmd: list[str], env: dict[str, str]) -> int:
+        _ckpt(run_dir, "checkpoint_final.pth")
+        return 0
+
+    run_training_job(  # type: ignore[arg-type]
+        REPO_ROOT, job, runner=stops, **_kw(tmp_path, dataset_provenance=prov("a" * 40))
+    )
+    with pytest.raises(ProvenanceError, match="identity differs"):
+        run_training_job(  # type: ignore[arg-type]
+            REPO_ROOT,
+            job,
+            runner=finishes,
+            resume=True,
+            **_kw(tmp_path, dataset_provenance=prov("b" * 40, n_cases=3)),
+        )
+    m = run_training_job(  # type: ignore[arg-type]
+        REPO_ROOT,
+        job,
+        runner=finishes,
+        resume=True,
+        **_kw(tmp_path, dataset_provenance=prov("b" * 40)),
+    )
+    assert m["status"] == "COMPLETED"

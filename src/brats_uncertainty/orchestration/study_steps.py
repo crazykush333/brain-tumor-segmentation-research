@@ -118,6 +118,8 @@ def execute_pilot(ctx: Context) -> Outcome:
     exp_dir = ctx.repo_root / ctx.cfg["paths"]["exp001_dir"]
     measurements = exp_dir / "measurements.json"
     if measurements.is_file():
+        if _resume_rerun_due(exp_dir):
+            return _rerun_resume_test(ctx, exp_dir)
         return Outcome(PASSED, "EXP-001 measurements recorded", evidence=[ctx.rel(measurements)])
     require_confirmations(ctx, "PILOT")
     rows = crosswalk_rows(ctx)
@@ -233,6 +235,105 @@ def execute_pilot(ctx: Context) -> Outcome:
     return Outcome(PASSED, "EXP-001 measurements recorded", evidence=[ctx.rel(measurements)])
 
 
+RESUME_RERUN_REASON = (
+    "the first R1 attempt was invalid: the child's output was block-buffered, so the harness "
+    "never saw three logged epochs and never interrupted the run; it completed all five "
+    "epochs and the 'resumed' process started after training had finished (harness defect, "
+    "fixed by unbuffered child output); R1 is re-run once, nothing else is re-measured"
+)
+
+
+def _resume_rerun_due(exp_dir: Path) -> bool:
+    body = read_json(exp_dir / "measurements.json")
+    check = exp_dir / "resume_check.json"
+    first = read_json(check) if check.is_file() else {}
+    return not body["projection_inputs"].get("resume_pass") and "rerun_of" not in first
+
+
+def _observed_platform_limits(ctx: Context, platform: str) -> dict[str, Any]:
+    """SR8 limits read by the operator (configs/compute/master_run.yaml platform_observed)."""
+    obs = (ctx.cfg.get("platform_observed") or {}).get(platform) or {}
+    return {k: obs[k] for k in ("quota_h_week", "session_limit_h", "source") if k in obs}
+
+
+def _rerun_resume_test(ctx: Context, exp_dir: Path) -> Outcome:
+    """EXP-001 R1 only, once, after a harness defect invalidated the first attempt."""
+    from brats_uncertainty.compute.pilot_run import (
+        SubprocessRunner,
+        plan_and_preprocess,
+        run_resume_test,
+    )
+    from brats_uncertainty.data.nnunet_dataset import write_nnunet_dataset
+    from brats_uncertainty.data.schema import load_schema
+    from brats_uncertainty.models.trainer_registration import register_trainers
+    from brats_uncertainty.orchestration.pilot import select_pilot_cases, verify_pilot_pool
+
+    rows = crosswalk_rows(ctx)
+    pcfg = read_yaml(ctx.repo_root / "configs/experiments/EXP-001.yaml")["pilot"]
+    cases = select_pilot_cases(rows, n=int(pcfg["n_cases"]), seed=int(pcfg["selection_seed"]))
+    verify_pilot_pool(cases, rows)  # D3/D5 as for the first pilot
+    register_trainers()
+    tr = ctx.cfg["training"]
+    did, name = int(tr["pilot_dataset_id"]), str(tr["pilot_dataset_name"])
+    pilot_work = ctx.work_dir / "exp001"
+    raw_base, pre_base = pilot_work / "nnUNet_raw", pilot_work / "nnUNet_preprocessed"
+    results_root, logs = pilot_work / "nnunet_results_r1_rerun", pilot_work / "logs"
+    env = {"nnUNet_raw": str(raw_base), "nnUNet_preprocessed": str(pre_base)}
+    raw = raw_base / f"Dataset{did:03d}_{name}"
+    if not raw.is_dir():
+        write_nnunet_dataset(
+            ctx.repo_root,
+            ctx.training_root(),
+            load_schema(ctx.repo_root / DATASET_CONFIG),
+            raw,
+            dataset_id=did,
+            dataset_name=name,
+            case_ids=cases,
+            gate_action="run_exp001",
+            training_root_reference=ctx.cfg["acquisition"]["training_set"],
+        )
+    runner = ctx.process_runner or SubprocessRunner()
+    code, _ = plan_and_preprocess(runner, did, env, logs / "plan_and_preprocess.log")
+    if code != 0:
+        _record_pilot_failure(ctx, exp_dir, {"plan_and_preprocess": (code, logs)})
+        raise StepBlocked(
+            f"EXP-001 R1 re-run: plan/preprocess exited {code}",
+            f"see {ctx.rel(exp_dir / PILOT_FAILURE_LOG)}; fix; re-run --resume",
+        )
+    res = run_resume_test(
+        runner, dataset_id=did, results_root=results_root, logs=logs, base_env=env
+    )
+    check = exp_dir / "resume_check.json"
+    first = read_json(check) if check.is_file() else None
+    write_json(
+        check, {**res, "rerun_of": first, "rerun_reason": RESUME_RERUN_REASON}, overwrite=True
+    )
+    body = read_json(exp_dir / "measurements.json")
+    body["projection_inputs"]["resume_pass"] = bool(res["resume_pass"])
+    body["spec_quantities"]["resume_pass"] = bool(res["resume_pass"])
+    limits = _observed_platform_limits(ctx, str(body["projection_inputs"].get("platform")))
+    for key in ("quota_h_week", "session_limit_h"):
+        if body["projection_inputs"].get(key) is None and key in limits:
+            body["projection_inputs"][key] = float(limits[key])
+            body["spec_quantities"][key] = float(limits[key])
+            body["not_measurable_on_platform"] = [
+                q for q in body.get("not_measurable_on_platform", []) if q != key
+            ]
+    if limits:
+        body["platform_limits_source"] = limits.get("source")
+    write_json(exp_dir / "measurements.json", body, overwrite=True)
+    if not res["resume_pass"]:
+        _record_pilot_failure(ctx, exp_dir, {"R1_first": (0, logs), "R1_resumed": (0, logs)})
+    _set_status(
+        ctx, experiments={"EXP-001": "COMPLETED"}, message="data(EXP-001): R1 resume test re-run"
+    )
+    return Outcome(
+        PASSED,
+        f"EXP-001 R1 re-run: resume_pass={res['resume_pass']}",
+        evidence=[ctx.rel(check), ctx.rel(exp_dir / "measurements.json")],
+    )
+
+
 PILOT_FAILURE_LOG = "failure_logs.json"
 _LOG_TAIL_LINES = 80
 _UNSAFE_LOG_LINE = re.compile(
@@ -324,8 +425,11 @@ def execute_d6(ctx: Context) -> Outcome:
     decision = decide(PilotMeasurements(**body["projection_inputs"]))
     unmeasurable = list(body.get("not_measurable_on_platform", []))
     path = exp / "budget_projection.json"
-    if not path.is_file():
-        write_json(path, {**decision.as_dict(), "not_measurable_on_platform": unmeasurable})
+    write_json(
+        path,
+        {**decision.as_dict(), "not_measurable_on_platform": unmeasurable},
+        overwrite=True,
+    )
     if decision.status != "FEASIBLE" or unmeasurable:
         dec_path = ctx.repo_root / D6_DECISION
         dec = read_yaml(dec_path) if dec_path.is_file() else None
@@ -340,6 +444,14 @@ def execute_d6(ctx: Context) -> Outcome:
                 f"the owner reviews {ctx.rel(path)} and records the decision in "
                 f"{D6_DECISION.as_posix()} "
                 "(decision: PROCEED or STOP; epochs: 250 or 150; reason); then re-run --resume",
+            )
+        if decision.acceptance_failures:
+            # PROCEED covers what the platform cannot measure; it never waives a failed
+            # acceptance check (resume correctness, memory fit), which training relies on
+            raise StepReview(
+                f"D6: EXP-001 acceptance failed {decision.acceptance_failures}; an owner "
+                "PROCEED does not waive it",
+                "fix the cause and re-measure in EXP-001; then re-run --resume",
             )
         evidence = dec_path
     else:

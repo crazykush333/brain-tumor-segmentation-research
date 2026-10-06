@@ -25,12 +25,13 @@ Statuses: PLANNED -> RUNNING -> COMPLETED | FAILED; any -> INVALIDATED.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import platform
 import re
 import subprocess
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -254,9 +255,22 @@ def run_identity(
         },
         "dataset_manifest_sha256": manifest_sha256,
         "split_sha256": split_sha256,
-        "dataset_conversion_sha256": sha256_file(dataset_provenance),
+        "dataset_conversion_sha256": conversion_content_sha256(prov),
         "data_class": want,
     }
+
+
+# Session-specific fields of the conversion record. The same converted dataset is rebuilt
+# in every hosted session (ephemeral storage) at whatever commit the runner is on, so these
+# fields must not enter a run's identity or a run could never resume in a later session.
+_SESSION_FIELDS = ("git_commit",)
+
+
+def conversion_content_sha256(provenance: Mapping[str, Any]) -> str:
+    """SHA-256 of the conversion record (cases, files, config) without session fields."""
+    body = {k: v for k, v in provenance.items() if k not in _SESSION_FIELDS}
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def plan_run(run_dir: Path, identity: dict[str, Any]) -> dict[str, Any]:

@@ -1,0 +1,25 @@
+{
+  "computed_at": "2026-10-06T03:05:58.744759+00:00",
+  "control_dice": {
+    "A": 0.8650411554589222,
+    "B": 0.2173836155444538
+  },
+  "control_pairs": {
+    "A": [
+      "BraTS2021_00626",
+      "BraTS2021_00758"
+    ],
+    "B": [
+      "BraTS2021_00639",
+      "BraTS2021_00557"
+    ]
+  },
+  "label_sha256": {
+    "BraTS2021_00557": "d08b426538661451976b2e1178ba6e39227672e84702832ecfed20a6e64c2530",
+    "BraTS2021_00626": "98bc65623df9a8dfa1305bad5af180e84155a115032edead035b5f1c0dc07edc",
+    "BraTS2021_00639": "e67d944f4fe9baffd0281bf67876b7715bdf1f91ec87b043bc7d768f8cb9ff65",
+    "BraTS2021_00758": "130f094554fc8efba65a6f8b807ffe68ffa7d1d32345575d407b0fdf6aa008a0"
+  },
+  "rule": "min WT-label Dice over verified positive-control pairs A and B (protocol §6.2)",
+  "value": 0.2173836155444538
+}

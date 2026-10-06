@@ -111,11 +111,27 @@ if nnUNetTrainer is not None:  # pragma: no cover - requires nnunetv2 + torch
         SAVE_EVERY = 5
         GATE = "train_main"
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # nnU-Net records its constructor arguments by reading each parameter name of
+        # ``self.__init__``'s signature from its own locals, so this signature must match
+        # nnUNetTrainer.__init__ exactly (``*args, **kwargs`` raises KeyError: 'args').
+        def __init__(
+            self,
+            plans: dict[str, Any],
+            configuration: str,
+            fold: int,
+            dataset_json: dict[str, Any],
+            device: Any = None,
+        ) -> None:
             require_action(self.GATE)
             self.protocol_seed = _seed_from_env()
             _seed_everything(self.protocol_seed)
-            super().__init__(*args, **kwargs)
+            super().__init__(
+                plans,
+                configuration,
+                fold,
+                dataset_json,
+                torch.device("cuda") if device is None else device,
+            )
             self.num_epochs = self.EPOCHS
             self.save_every = self.SAVE_EVERY
 

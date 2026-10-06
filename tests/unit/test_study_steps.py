@@ -133,6 +133,57 @@ def test_execute_pilot_end_to_end_with_fakes(
     assert ss.execute_pilot(ctx).summary == "EXP-001 measurements recorded"  # never re-run
 
 
+class CrashingRunner(FakeRunner):
+    """Preprocessing succeeds; every training process crashes at start-up."""
+
+    def run(self, cmd: Any, env: Any, log: Path) -> tuple[int, float]:
+        if cmd[0] == "nnUNetv2_plan_and_preprocess":
+            return super().run(cmd, env, log)
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text(
+            "Traceback (most recent call last):\n"
+            "  fetching https://example.invalid/x\n"
+            "TypeError: SYNTHETIC trainer failure\n",
+            encoding="utf-8",
+        )
+        return 1, 3.0
+
+
+def test_execute_pilot_failure_commits_log_tails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import shutil
+
+    from tests.conftest import REPO_ROOT
+
+    ctx = make_ctx(tmp_path, FakeOps(gates={}), process_runner=CrashingRunner())
+    for rel in ("configs/experiments/EXP-001.yaml", "configs/dataset/brats2021.yaml"):
+        (ctx.repo_root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO_ROOT / rel, ctx.repo_root / rel)
+    rows = [CrosswalkRow(f"BraTS2021_{i:05d}", "18", "SYNTH", None) for i in range(60)]
+    monkeypatch.setattr(ss, "crosswalk_rows", lambda c: rows)
+    monkeypatch.setattr(ss, "_set_status", lambda *a, **k: None)
+    monkeypatch.setattr(pilot_run, "GpuMonitor", lambda path: _NullCtx())
+    monkeypatch.setattr(
+        "brats_uncertainty.models.trainer_registration.register_trainers", lambda *a: None
+    )
+    monkeypatch.setattr(
+        "brats_uncertainty.data.nnunet_dataset.write_nnunet_dataset",
+        lambda *a, **k: Path(a[3]).mkdir(parents=True),
+    )
+    confirm_all(ctx.repo_root)
+    with pytest.raises(StepBlocked, match=r"P2.*exit codes"):
+        ss.execute_pilot(ctx)
+    body = json.loads(
+        (ctx.repo_root / "results/EXP-001" / ss.PILOT_FAILURE_LOG).read_text(encoding="utf-8")
+    )
+    p2 = body["failed_processes"]["P2"]
+    assert p2["exit_code"] == 1 and p2["log_tail"][-1].startswith("TypeError")
+    assert not any("https://" in ln for ln in p2["log_tail"])  # URL-like lines dropped
+    assert set(body["failed_processes"]) == {"P2", "P4", "P5_seed1", "P5_seed2"}
+    assert "SYNTHETIC trainer failure" in capsys.readouterr().out
+
+
 class _NullCtx:
     def __enter__(self) -> _NullCtx:
         return self

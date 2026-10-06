@@ -11,6 +11,7 @@ produces every result (SR4); the evaluation ledger lives in the main checkout.
 from __future__ import annotations
 
 import csv
+import re
 import shutil
 import time
 from collections.abc import Callable, Mapping
@@ -153,8 +154,10 @@ def execute_pilot(ctx: Context) -> Outcome:
     rec = PilotRecord(platform=str(facts["environment"]), gpu_names=[str(facts["gpu"].get("name"))])
     code, wall = plan_and_preprocess(runner, did, env, logs / "plan_and_preprocess.log")
     if code != 0:
+        _record_pilot_failure(ctx, exp_dir, {"plan_and_preprocess": (code, logs)})
         raise StepBlocked(
-            f"EXP-001: plan/preprocess exited {code}", "inspect the log; re-run --resume"
+            f"EXP-001: plan/preprocess exited {code}",
+            f"see {ctx.rel(exp_dir / PILOT_FAILURE_LOG)}; fix; re-run --resume",
         )
     rec.preproc_s, rec.n_preproc_cases = wall, len(cases)
     codes = []
@@ -175,10 +178,18 @@ def execute_pilot(ctx: Context) -> Outcome:
                 )
             )
     rec.monitor = gpu_monitor_summary(monitor_csv)
+    failed = {
+        run_id: (c, logs)
+        for (run_id, _arm, _seed), c in zip(TIMING_RUNS, codes, strict=True)
+        if run_id not in rec.timings
+    }
+    if failed:
+        _record_pilot_failure(ctx, exp_dir, failed)
     if "P2" not in rec.timings:
         raise StepBlocked(
-            "EXP-001: the single-GPU timing run (P2) did not complete",
-            f"inspect {logs / 'P2.log'}; re-run --resume",
+            "EXP-001: the single-GPU timing run (P2) did not complete "
+            f"(exit codes: { {k: v[0] for k, v in failed.items()} })",
+            f"see {ctx.rel(exp_dir / PILOT_FAILURE_LOG)}; fix; re-run --resume",
         )
     rec.resume = run_resume_test(
         runner, dataset_id=did, results_root=results_root, logs=logs, base_env=env
@@ -220,6 +231,40 @@ def execute_pilot(ctx: Context) -> Outcome:
         ctx, experiments={"EXP-001": "COMPLETED"}, message="data(EXP-001): pilot measurements"
     )
     return Outcome(PASSED, "EXP-001 measurements recorded", evidence=[ctx.rel(measurements)])
+
+
+PILOT_FAILURE_LOG = "failure_logs.json"
+_LOG_TAIL_LINES = 80
+_UNSAFE_LOG_LINE = re.compile(
+    r"https?://|token|passcode|secret|password|api[_-]?key|dice|aurc", re.I
+)  # D4: no metric values
+
+
+def _record_pilot_failure(
+    ctx: Context, exp_dir: Path, failed: Mapping[str, tuple[int, Path]]
+) -> None:
+    """Commit-safe evidence of failed pilot processes: exit codes and log tails.
+
+    The logs live in the session's temporary work directory, which a hosted notebook
+    discards. Tails are printed and written next to the measurements; lines that look
+    like URLs or credentials, and nnU-Net metric lines (D4), are dropped.
+    """
+    body: dict[str, Any] = {"experiment": "EXP-001", "failed_processes": {}}
+    for run_id, (code, logs) in failed.items():
+        log = logs / f"{run_id}.log"
+        lines = (
+            log.read_text(encoding="utf-8", errors="replace").splitlines() if log.is_file() else []
+        )
+        tail = [ln[:400] for ln in lines if not _UNSAFE_LOG_LINE.search(ln)][-_LOG_TAIL_LINES:]
+        body["failed_processes"][run_id] = {
+            "exit_code": code,
+            "log_present": log.is_file(),
+            "log_tail": tail,
+        }
+        print(f"---- EXP-001 {run_id}: exit {code}; last {len(tail)} log lines ----")
+        print("\n".join(tail))
+    exp_dir.mkdir(parents=True, exist_ok=True)
+    write_json(exp_dir / PILOT_FAILURE_LOG, body, overwrite=True)
 
 
 def _pilot_inference_timing(

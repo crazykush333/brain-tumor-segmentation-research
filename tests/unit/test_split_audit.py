@@ -177,3 +177,10 @@ def test_a5_quarantined_case_in_groups_fails(tmp_path: Path) -> None:
     r = sa.audit(_a5_fixture(tmp_path, quarantine_in_split=True))
     assert not r["passed"]
     assert not r["checks"]["b9_covers_exactly_the_primary_cohort"]
+
+
+def test_report_states_the_overall_verdict(tmp_path: Path) -> None:
+    ok = sa.render_report(sa.audit(_a5_fixture(tmp_path / "ok")))
+    assert "OVERALL_SPLIT_VERIFICATION = VERIFIED" in ok and "quarantine 1" in ok
+    bad = sa.render_report(sa.audit(_a5_fixture(tmp_path / "bad", quarantine_in_split=True)))
+    assert "OVERALL_SPLIT_VERIFICATION = FAILED" in bad

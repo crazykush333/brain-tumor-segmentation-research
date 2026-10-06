@@ -270,3 +270,40 @@ def _audit_with_groups(
         },
         "crossing_groups": crossing,
     }
+
+
+def render_report(result: dict[str, Any]) -> str:
+    """Human-readable verdict of :func:`audit` (IDs, counts and hashes only)."""
+    verdict = "VERIFIED" if result["passed"] else "FAILED"
+    b8, pg, sp = result["b8"], result["patient_groups"], result["split"]
+    lines = [
+        "# Independent split verification (gates B8-B12)",
+        "",
+        f"OVERALL_SPLIT_VERIFICATION = {verdict}",
+        "",
+        "Produced by `brats-uncertainty audit-split` "
+        "(`brats_uncertainty.verification.split_audit`), which re-derives the patient groups "
+        "from committed records without importing the production grouping or split code.",
+        "",
+        f"- B8 procedure: {b8.get('procedure', 'automated_v1.0-A3')}",
+    ]
+    if "n_primary" in b8:
+        lines.append(
+            f"- development pool {b8.get('n_development_pool')}: primary (identity-clean) "
+            f"{b8.get('n_primary')}, quarantine {b8.get('n_quarantine')} (never split)"
+        )
+    lines += [
+        f"- patient groups: {pg['n_groups']} over {pg['n_cases']} cases; largest "
+        f"{pg['largest_group']}; size counts {pg['group_size_counts']}",
+        f"- split seed: {sp['seed']}",
+        f"- cases per partition: {sp['case_counts']}",
+        f"- groups per partition: {sp['group_counts']}",
+        f"- split_all.csv SHA-256: `{sp['split_all_csv_sha256']}`",
+        f"- groups crossing partitions: {len(result['crossing_groups'])}",
+        "",
+        "| Check | Result |",
+        "|---|---|",
+        *(f"| {k} | {'PASS' if ok else 'FAIL'} |" for k, ok in result["checks"].items()),
+        "",
+    ]
+    return "\n".join(lines)

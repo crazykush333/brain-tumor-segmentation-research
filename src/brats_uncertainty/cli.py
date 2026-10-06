@@ -326,12 +326,16 @@ def _cmd_b8_a4_dryrun(root: Path, args: argparse.Namespace) -> int:
 def _cmd_audit_split(root: Path, args: argparse.Namespace) -> int:
     import json as _json
 
-    from brats_uncertainty.verification.split_audit import audit
+    from brats_uncertainty.verification.split_audit import audit, render_report
 
     result = audit(root)
     out = root / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(_json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if args.report:
+        rep = root / args.report
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text(render_report(result), encoding="utf-8", newline="\n")
     for k, ok in result["checks"].items():
         print(f"{'PASS' if ok else 'FAIL'}  {k}")
     print("B8-B12 split audit:", "PASSED" if result["passed"] else "FAILED")
@@ -659,6 +663,7 @@ def build_parser() -> argparse.ArgumentParser:
         "audit-split", help="independent B8-B12 leakage/provenance audit (committed IDs only)"
     )
     au.add_argument("--out", default="docs/research/execution/B8_B12_SUMMARY.json")
+    au.add_argument("--report", default=None, help="also write the Markdown verdict here")
     au.set_defaults(func=_cmd_audit_split)
     vi = sub.add_parser(
         "verify-inventory", help="check a (re-)acquired tree against the committed B2 inventory"

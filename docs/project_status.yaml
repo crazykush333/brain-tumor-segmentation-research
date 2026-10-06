@@ -96,8 +96,8 @@ gates:
   - {id: B3, title: "SHA-256 recorded for BraTS2021_MappingToTCIA.xlsx as used", status: PASSED, evidence: "docs/data/records/B3.json", closed_on: "2026-10-05"}
   - {id: B4, title: "SHA-256 recorded for UCSF-PDGM-metadata_v5.csv as used", status: PASSED, evidence: "docs/data/records/B4.json", closed_on: "2026-10-05"}
   - {id: B5, title: "Data manifest and hashes recorded", status: PASSED, evidence: "docs/data/records/B5_manifest.json", closed_on: "2026-10-05"}
-  - {id: B6, title: "Counts derived from the hashed crosswalk and checked against the protocol targets", status: RUNNING, evidence: null, closed_on: null}
-  - {id: B7, title: "T_screen computed from positive controls; pairwise screen run", status: LOCKED, evidence: null, closed_on: null}
+  - {id: B6, title: "Counts derived from the hashed crosswalk and checked against the protocol targets", status: PASSED, evidence: "docs/data/records/B6.json", closed_on: "2026-10-06"}
+  - {id: B7, title: "T_screen computed from positive controls; pairwise screen run", status: AUTHORIZED, evidence: null, closed_on: null}
   - {id: B8, title: "Flagged pairs manually reviewed", status: LOCKED, evidence: null, closed_on: null}
   - {id: B9, title: "Patient groups frozen and committed (IDs only)", status: LOCKED, evidence: null, closed_on: null}
   - {id: B10, title: "Final split created once", status: LOCKED, evidence: null, closed_on: null}

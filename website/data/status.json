@@ -1,13 +1,18 @@
 {
   "count_verification": {
-    "label": "Protocol verification targets (not yet verified from the source file)",
-    "status": "EXPECTED_BY_PROTOCOL",
+    "counts": {
+      "development": 740,
+      "held_out_institution": 511,
+      "total": 1251
+    },
+    "label": "Counts verified from the hashed crosswalk (gate B6)",
+    "status": "VERIFIED_FROM_SOURCE",
     "targets": {
       "development": 740,
       "held_out_institution": 511,
       "total": 1251
     },
-    "verification": "UNAVAILABLE"
+    "verification": "VERIFIED_FROM_SOURCE"
   },
   "data": {
     "acquired": true,
@@ -123,17 +128,17 @@
       "title": "Data manifest and hashes recorded"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "B",
       "id": "B6",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Counts derived from the hashed crosswalk and checked against the protocol targets"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B7",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "T_screen computed from positive controls; pairwise screen run"
     },
     {
@@ -310,13 +315,13 @@
       "detail": "counts derived from the hashed crosswalk vs protocol targets",
       "key": "b6",
       "label": "B6 Count verification",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "T_screen and same-patient screen; after B6 has passed",
       "key": "b7",
       "label": "B7 Patient grouping",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "flagged pairs reviewed",

@@ -468,3 +468,79 @@ def test_version9_failure_restarts_train_a0_under_the_recorded_approval(
         st.training_executor("JOB-02")(ctx)
     assert seen["restart_without_checkpoint"] is True and seen["resume"] is False
     assert seen["nnunet_env"]["nnUNet_preprocessed"].endswith("nnUNet_preprocessed")
+
+
+def test_kaggle_credentials_from_environment_only_when_complete() -> None:
+    assert sess.kaggle_credentials({"KAGGLE_USERNAME": "u"}) is None  # no secrets client here
+    creds = sess.kaggle_credentials({"KAGGLE_USERNAME": "u", "KAGGLE_KEY": "SYNTHETIC"})
+    assert creds == {"KAGGLE_USERNAME": "u", "KAGGLE_KEY": "SYNTHETIC"}
+
+
+def test_restore_sources_in_order(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    results = tmp_path / "r"
+    sess.persist_run(_run(results), results, tmp_path / "attached" / "v12" / "persist")
+    s = sess.SessionSettings(
+        budget_s=3600,
+        persist_dir=None,
+        restore_dir=None,
+        restore_notebook="owner/nb",
+        min_start_s=0,
+        stop_margin_s=0,
+        state_dataset="owner/state",
+        input_root=tmp_path / "attached",
+    )
+    found = sess.find_restore_source(s)  # an attached previous output is used first
+    assert found == tmp_path / "attached" / "v12" / "persist"
+    assert sess.LAST_RESTORE_NOTE["mode"] == "attached input"
+
+    # no attached input: the private dataset, then the notebook output, via the API
+    calls: list[list[str]] = []
+
+    def cli(args: list[str], creds: dict[str, str], **kw: Any) -> tuple[int, str]:
+        calls.append(list(args))
+        if args[0] == "kernels":
+            dest = Path(args[args.index("-p") + 1])
+            sess.persist_run(_run(dest / "tmp"), dest / "tmp", dest / "persist")
+            return 0, "Output file downloaded"
+        return 1, "404 dataset not found (key SYNTHETIC-KEY)"
+
+    monkeypatch.setattr(sess, "_kaggle_cli", cli)
+    monkeypatch.setenv("KAGGLE_USERNAME", "owner")
+    monkeypatch.setenv("KAGGLE_KEY", "SYNTHETIC-KEY")
+    monkeypatch.setenv("BRATS_WORK", str(tmp_path / "work"))
+    s2 = sess.SessionSettings(**{**s.__dict__, "input_root": tmp_path / "none"})
+    found = sess.find_restore_source(s2)
+    assert found is not None and (found / sess.PERSIST_SUBDIR).is_dir()
+    assert [c[0] for c in calls] == ["datasets", "kernels"]
+    assert sess.LAST_RESTORE_NOTE["mode"] == "notebook output (Kaggle API)"
+
+
+def test_kaggle_cli_output_never_contains_the_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess as sp
+
+    class Res:
+        returncode, stdout, stderr = 1, "denied for key SECRET-123", ""
+
+    monkeypatch.setattr(sp, "run", lambda *a, **k: Res())
+    code, out = sess._kaggle_cli(
+        ["datasets", "list"], {"KAGGLE_USERNAME": "u", "KAGGLE_KEY": "SECRET-123"}
+    )
+    assert code == 1 and "SECRET-123" not in out and "<redacted>" in out
+
+
+def test_dataset_persist_creates_then_versions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    def cli(args: list[str], creds: dict[str, str], **kw: Any) -> tuple[int, str]:
+        calls.append(args[1])
+        return (1, "not found") if args[1] == "version" and len(calls) == 1 else (0, "ok")
+
+    monkeypatch.setattr(sess, "_kaggle_cli", cli)
+    out = sess.dataset_persist(
+        "owner/state", tmp_path, {"KAGGLE_USERNAME": "u", "KAGGLE_KEY": "k"}, "m"
+    )
+    assert out["action"] == "create" and out["exit_code"] == 0 and calls == ["version", "create"]
+    meta = json.loads((tmp_path / "dataset-metadata.json").read_text(encoding="utf-8"))
+    assert meta["id"] == "owner/state" and meta["isPrivate"] is True

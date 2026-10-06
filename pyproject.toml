@@ -87,5 +87,5 @@ no_implicit_optional = true
 strict_equality = true
 
 [[tool.mypy.overrides]]
-module = ["nibabel.*", "openpyxl.*", "nnunetv2.*", "torch.*", "matplotlib.*", "scipy.*", "kagglehub.*"]
+module = ["nibabel.*", "openpyxl.*", "nnunetv2.*", "torch.*", "matplotlib.*", "scipy.*", "kagglehub.*", "kaggle_secrets.*"]
 ignore_missing_imports = true

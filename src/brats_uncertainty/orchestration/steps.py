@@ -1222,6 +1222,7 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
                 write_json(run_dir / "run_manifest.json", rec, overwrite=True)
         if settings.persist_dir is not None and run_dir.is_dir():
             persist_run(run_dir, results_root, settings.persist_dir)
+            _persist_state_dataset(ctx, settings, run_dir)
         _publish_run_manifest(ctx, job.experiment_id, run_dir)  # committed at the milestone
         if failure is not None:
             _publish_failure_log(ctx, job.experiment_id, run_dir, stdout_log, rec, error=failure)
@@ -1412,6 +1413,30 @@ def transfer_record(ctx: Context, run_dir: Path, source: Path | None) -> dict[st
         "checks": checks,
         "passed": all(checks.values()),
     }
+
+
+def _persist_state_dataset(ctx: Context, settings: Any, run_dir: Path) -> None:
+    """Upload this session's run state to the private run-state dataset (when configured
+    and the owner's Kaggle API credentials are available); the outcome is committed."""
+    from brats_uncertainty.compute.session import dataset_persist, kaggle_credentials
+
+    if not settings.state_dataset or settings.persist_dir is None:
+        return
+    creds = kaggle_credentials(ctx.environ)
+    if creds is None:
+        outcome: dict[str, Any] = {
+            "dataset": settings.state_dataset,
+            "action": "skipped",
+            "reason": "no Kaggle API credentials in Kaggle Secrets (KAGGLE_USERNAME, KAGGLE_KEY)",
+        }
+    else:
+        outcome = dataset_persist(
+            settings.state_dataset,
+            settings.persist_dir,
+            creds,
+            f"{run_dir.name}: run state after session {datetime.now(UTC).isoformat()}",
+        )
+    _commit_transfer_record(ctx, run_dir.parent.name, run_dir.name, {"persist": outcome})
 
 
 def _commit_transfer_record(ctx: Context, experiment: str, run: str, rec: dict[str, Any]) -> None:

@@ -56,6 +56,8 @@ session:                              # hosted-session limits (compute.session);
     stop_margin_h: 0.5                # stop after the next checkpoint within this margin
     persist_dir: /kaggle/working/persist   # private notebook output (no raw data)
     restore_notebook: ayushkushwaha123/brats-99-master-pipeline   # previous version's output
+    state_dataset: ayushkushwaha123/brats-unc-run-state   # private dataset of run state (API)
+    input_root: /kaggle/input        # a previous output attached as an input is used first
 
 review:                               # gate B8 (protocol section 6.2)
   # Amendment v1.0-A5 (2026-10-06): identity-clean primary cohort and quarantine

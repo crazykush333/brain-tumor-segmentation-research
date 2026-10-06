@@ -11,6 +11,12 @@ session ends. Therefore, in an environment with a session budget (``master_run.y
 - the next session restores the run directories from the previous session's output,
   verifying each recorded checkpoint by SHA-256 (``restore_runs``), and resumes.
 
+Where the previous state comes from (``find_restore_source``, first match): an explicit
+directory; a previous output attached to the notebook as an input (``/kaggle/input``); a
+private Kaggle dataset holding the run state (``state_dataset``, written at every pause with
+the owner's Kaggle API credentials, read from Kaggle Secrets at run time and never logged);
+the notebook's own output (kagglehub; refused by Kaggle in non-interactive sessions).
+
 Nothing here changes what is trained: the run identity (protocol, configs, training code,
 data, split) is checked by ``compute.jobs`` exactly as before, and a resumed run continues
 from its own verified checkpoint only.
@@ -47,6 +53,8 @@ class SessionSettings:
     restore_notebook: str | None  # hosted-notebook handle whose latest output is restored
     min_start_s: float
     stop_margin_s: float
+    state_dataset: str | None = None  # private dataset holding the run state (owner/slug)
+    input_root: Path | None = None  # where attached inputs are mounted (/kaggle/input)
 
 
 def session_settings(
@@ -64,7 +72,89 @@ def session_settings(
         restore_notebook=sess.get("restore_notebook"),
         min_start_s=float(sess.get("min_start_h", 1.0)) * 3600,
         stop_margin_s=float(sess.get("stop_margin_h", 0.5)) * 3600,
+        state_dataset=sess.get("state_dataset"),
+        input_root=Path(sess["input_root"]) if sess.get("input_root") else None,
     )
+
+
+_CREDENTIAL_NAMES = ("KAGGLE_USERNAME", "KAGGLE_KEY")
+
+
+def kaggle_credentials(environ: Mapping[str, str]) -> dict[str, str] | None:
+    """The owner's Kaggle API credentials: environment, else Kaggle Secrets (never logged)."""
+    found = {k: environ[k] for k in _CREDENTIAL_NAMES if environ.get(k)}
+    if len(found) < 2:
+        try:  # pragma: no cover - only inside a Kaggle session with the secrets attached
+            from kaggle_secrets import UserSecretsClient
+
+            client = UserSecretsClient()
+            for k in _CREDENTIAL_NAMES:
+                found.setdefault(k, client.get_secret(k))
+        except Exception:
+            return None
+    return found if all(found.get(k) for k in _CREDENTIAL_NAMES) else None
+
+
+def _kaggle_cli(args: Sequence[str], creds: Mapping[str, str], **kw: Any) -> tuple[int, str]:
+    """Run the kaggle CLI with credentials in its environment only; output is scrubbed."""
+    env = {**os.environ, **creds}
+    res = subprocess.run(["kaggle", *args], env=env, capture_output=True, text=True, **kw)
+    out = (res.stdout + res.stderr).replace(creds.get("KAGGLE_KEY", "\0"), "<redacted>")
+    return res.returncode, out[-1500:]
+
+
+def _find_persist(root: Path) -> Path | None:
+    hits = sorted(p.parent for p in root.rglob(PERSIST_SUBDIR) if p.is_dir())
+    return hits[0] if hits else None
+
+
+def dataset_restore(handle: str, dest: Path, creds: Mapping[str, str]) -> Path | None:
+    """Download the latest version of the private run-state dataset into ``dest``."""
+    dest.mkdir(parents=True, exist_ok=True)
+    code, out = _kaggle_cli(
+        ["datasets", "download", "-d", handle, "-p", str(dest), "--unzip"], creds
+    )
+    LAST_RESTORE_NOTE["dataset_download"] = {"exit_code": code, "output_tail": out[-400:]}
+    return _find_persist(dest) if code == 0 else None
+
+
+def notebook_output_restore(handle: str, dest: Path, creds: Mapping[str, str]) -> Path | None:
+    """Download the latest completed version's output of the notebook (Kaggle API)."""
+    dest.mkdir(parents=True, exist_ok=True)
+    code, out = _kaggle_cli(["kernels", "output", handle, "-p", str(dest)], creds)
+    LAST_RESTORE_NOTE["notebook_output_download"] = {"exit_code": code, "output_tail": out[-400:]}
+    return _find_persist(dest) if code == 0 else None
+
+
+def dataset_persist(
+    handle: str, persist_dir: Path, creds: Mapping[str, str], message: str
+) -> dict[str, Any]:
+    """Upload ``persist_dir`` as a new version of the private run-state dataset (created,
+    private, on first use). Holds run directories only: manifests, checkpoints, logs."""
+    import json
+
+    meta = persist_dir / "dataset-metadata.json"
+    meta.write_text(
+        json.dumps(
+            {
+                "title": "brats-unc run state (private)",
+                "id": handle,
+                "licenses": [{"name": "other"}],
+                "isPrivate": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    code, out = _kaggle_cli(
+        ["datasets", "version", "-p", str(persist_dir), "-m", message, "--dir-mode", "zip"], creds
+    )
+    action = "version"
+    if code != 0:
+        code, out = _kaggle_cli(
+            ["datasets", "create", "-p", str(persist_dir), "--dir-mode", "zip"], creds
+        )
+        action = "create"
+    return {"dataset": handle, "action": action, "exit_code": code, "output_tail": out[-400:]}
 
 
 def _copy_tree(src: Path, dest: Path) -> None:
@@ -139,6 +229,28 @@ def find_restore_source(settings: SessionSettings) -> Path | None:
     if settings.restore_dir is not None:
         LAST_RESTORE_NOTE["mode"] = "directory"
         return settings.restore_dir if settings.restore_dir.is_dir() else None
+    if settings.input_root is not None and settings.input_root.is_dir():
+        attached = _find_persist(settings.input_root)
+        if attached is not None:
+            LAST_RESTORE_NOTE["mode"] = "attached input"
+            return attached
+    if settings.state_dataset:
+        creds = kaggle_credentials(os.environ)
+        if creds is None:
+            LAST_RESTORE_NOTE["dataset"] = "no Kaggle API credentials (Kaggle Secrets)"
+        else:
+            LAST_RESTORE_NOTE["mode"] = "private run-state dataset"
+            dest = Path(os.environ.get("BRATS_WORK", "/tmp/brats")) / "restore_dataset"
+            found = dataset_restore(settings.state_dataset, dest, creds)
+            if found is not None:
+                return found
+            if settings.restore_notebook:  # the latest completed version's output, via the API
+                found = notebook_output_restore(
+                    settings.restore_notebook, dest.parent / "restore_notebook_output", creds
+                )
+                if found is not None:
+                    LAST_RESTORE_NOTE["mode"] = "notebook output (Kaggle API)"
+                    return found
     if not settings.restore_notebook:
         LAST_RESTORE_NOTE["mode"] = "none configured"
         return None

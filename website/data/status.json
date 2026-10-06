@@ -156,17 +156,17 @@
       "title": "Patient groups frozen and committed (IDs only)"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "B",
       "id": "B10",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Final split created once"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B11",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "Split assertions pass"
     },
     {
@@ -339,13 +339,13 @@
       "detail": "created once",
       "key": "b10",
       "label": "B10 Final split",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "split assertions pass",
       "key": "b11",
       "label": "B11 Split assertions",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "split hashes recorded",

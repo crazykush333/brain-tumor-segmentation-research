@@ -1110,6 +1110,13 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         settings = restore_session_runs(ctx)
         committed = _published_manifest(ctx, job.experiment_id, run_dir)
         manifest = read_manifest(run_dir)
+        if manifest is None and committed is not None and committed.get("checkpoint") is None:
+            # nothing to restore: the run never left a checkpoint, and the committed manifest
+            # is the full record of its attempts; it seeds the local run directory so the
+            # usual rules (scoped restart approval, never a silent restart) apply
+            run_dir.mkdir(parents=True, exist_ok=True)
+            write_json(run_dir / "run_manifest.json", committed)
+            manifest = read_manifest(run_dir)
         if manifest is None and committed is not None:
             raise StepBlocked(
                 f"{job_id}: an earlier session ran this job (status {committed['status']}) but "
@@ -1306,6 +1313,7 @@ def restore_session_runs(ctx: Context) -> Any:
     marker = ctx.work_dir / SESSION_RESTORE_MARKER
     if marker.is_file():
         return settings
+    from brats_uncertainty.compute import session as session_mod
     from brats_uncertainty.errors import ProvenanceError
 
     source = find_restore_source(settings)
@@ -1331,7 +1339,15 @@ def restore_session_runs(ctx: Context) -> Any:
         _commit_transfer_record(ctx, run_dir.parent.name, run_dir.name, rec)
         print(f"session restore: {rel}: transfer checks {'PASS' if rec['passed'] else 'FAIL'}")
     marker.parent.mkdir(parents=True, exist_ok=True)
-    write_json(marker, {"source": str(source) if source else None, "restored": restored})
+    note = {
+        "restore_notebook": settings.restore_notebook,
+        "source": str(source) if source else None,
+        "restored": restored,
+        "detail": session_mod.LAST_RESTORE_NOTE,
+    }
+    write_json(marker, note)
+    if settings.budget_s is not None:  # hosted sessions: what the restore found is evidence
+        _commit_transfer_record(ctx, "MAIN", "session-restore", note)
     return settings
 
 

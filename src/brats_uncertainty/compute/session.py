@@ -129,21 +129,32 @@ def restore_runs(source: Path, results_root: Path, persist_dir: Path | None) -> 
     return restored
 
 
+LAST_RESTORE_NOTE: dict[str, Any] = {}  # what the last find_restore_source call found
+
+
 def find_restore_source(settings: SessionSettings) -> Path | None:
     """The previous session's persist directory: an explicit path, or the latest output of
     the configured hosted notebook (downloaded with kagglehub inside a Kaggle session)."""
+    LAST_RESTORE_NOTE.clear()
     if settings.restore_dir is not None:
+        LAST_RESTORE_NOTE["mode"] = "directory"
         return settings.restore_dir if settings.restore_dir.is_dir() else None
     if not settings.restore_notebook:
+        LAST_RESTORE_NOTE["mode"] = "none configured"
         return None
+    LAST_RESTORE_NOTE["mode"] = "kagglehub notebook output"
     try:  # pragma: no cover - requires a Kaggle session
         import kagglehub
 
         out = Path(kagglehub.notebook_output_download(settings.restore_notebook))
     except Exception as exc:  # pragma: no cover - reported, never silent
-        print(f"session restore: notebook output unavailable ({type(exc).__name__}: {exc})")
+        LAST_RESTORE_NOTE["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
+        print(f"session restore: notebook output unavailable ({LAST_RESTORE_NOTE['error']})")
         return None
+    entries = sorted(p.name for p in out.iterdir())[:20] if out.is_dir() else []  # pragma: no cover
+    LAST_RESTORE_NOTE.update(downloaded=True, top_level_entries=entries)  # pragma: no cover
     hits = [p for p in (out / "persist", out) if (p / PERSIST_SUBDIR).is_dir()]  # pragma: no cover
+    LAST_RESTORE_NOTE["persist_dir_found"] = bool(hits)  # pragma: no cover
     return hits[0] if hits else None  # pragma: no cover
 
 

@@ -210,9 +210,24 @@ def test_training_step_never_starts_late_or_restarts_silently(
     lost = _training_ctx(tmp_path / "lost", monkeypatch)
     published = lost.repo_root / "results/MAIN/runs/arm_a_seed_0/run_manifest.json"
     published.parent.mkdir(parents=True)
-    published.write_text(json.dumps({"status": "FAILED"}), encoding="utf-8")
+    ckpt = {"path": "fold_0/checkpoint_latest.pth", "sha256": "c" * 64}
+    published.write_text(json.dumps({"status": "FAILED", "checkpoint": ckpt}), "utf-8")
     with pytest.raises(st.StepBlocked, match="was not restored in this session"):
-        st.training_executor("JOB-02")(lost)
+        st.training_executor("JOB-02")(lost)  # a checkpoint exists elsewhere: never restart
+
+    # no checkpoint was ever written: the committed manifest seeds the run directory and
+    # the restart rules apply (here no approval is recorded, so the owner is asked)
+    never = _training_ctx(tmp_path / "never", monkeypatch)
+    published = never.repo_root / "results/MAIN/runs/arm_a_seed_0/run_manifest.json"
+    published.parent.mkdir(parents=True)
+    attempt = {"started_at": "2026-10-06T19:45:11+00:00", "ended_at": "2026-10-06T19:45:41+00:00"}
+    published.write_text(
+        json.dumps({"status": "FAILED", "checkpoint": None, "attempts": [attempt]}), "utf-8"
+    )
+    with pytest.raises(st.StepReview, match="left no checkpoint"):
+        st.training_executor("JOB-02")(never)
+    seeded = never.work_dir / "nnunet_results/MAIN/arm_a_seed_0/run_manifest.json"
+    assert json.loads(seeded.read_text(encoding="utf-8"))["attempts"] == [attempt]
 
 
 def test_training_step_refuses_a_stale_restored_run(
@@ -425,3 +440,31 @@ def test_recorded_restart_is_scoped_to_the_failures_it_names(
     assert st._recorded_restart_approval(ctx, "JOB-02", {"attempts": [v9]})
     assert not st._recorded_restart_approval(ctx, "JOB-02", {"attempts": [v9, later]})
     assert not st._recorded_restart_approval(ctx, "JOB-02", {"attempts": []})
+
+
+def test_version9_failure_restarts_train_a0_under_the_recorded_approval(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The committed state after version 9: A0 FAILED at start-up, no checkpoint, approval
+    recorded -> the next session restarts A0 (with nnU-Net's data paths)."""
+    import shutil
+
+    from brats_uncertainty.compute import jobs
+    from brats_uncertainty.orchestration import steps as st
+    from tests.conftest import REPO_ROOT
+
+    ctx = _training_ctx(tmp_path, monkeypatch)
+    for rel in (str(st.RESTART_APPROVALS), "results/MAIN/runs/arm_a_seed_0/run_manifest.json"):
+        (ctx.repo_root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO_ROOT / rel, ctx.repo_root / rel)
+    seen: dict[str, Any] = {}
+
+    def fake_job(repo: Path, job: Any, **kw: Any) -> dict:
+        seen.update(kw)
+        raise RuntimeError("stop here")
+
+    monkeypatch.setattr(jobs, "run_training_job", fake_job)
+    with pytest.raises(RuntimeError, match="stop here"):
+        st.training_executor("JOB-02")(ctx)
+    assert seen["restart_without_checkpoint"] is True and seen["resume"] is False
+    assert seen["nnunet_env"]["nnUNet_preprocessed"].endswith("nnUNet_preprocessed")

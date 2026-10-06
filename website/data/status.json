@@ -135,17 +135,17 @@
       "title": "Counts derived from the hashed crosswalk and checked against the protocol targets"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "B",
       "id": "B7",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "T_screen computed from positive controls; pairwise screen run"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B8",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "Flagged pairs manually reviewed"
     },
     {
@@ -321,13 +321,13 @@
       "detail": "T_screen and same-patient screen; after B6 has passed",
       "key": "b7",
       "label": "B7 Patient grouping",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "flagged pairs reviewed",
       "key": "b8",
       "label": "B8 Manual review",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "patient groups frozen (IDs only)",

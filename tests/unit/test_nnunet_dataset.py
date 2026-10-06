@@ -233,12 +233,18 @@ def test_synthetic_mode_end_to_end(repo_root: Path, tmp_path: Path) -> None:
     assert {c["source_collection"] for c in prov["cases"]} == {"UCSF-PDGM", "UPENN-GBM"}
 
 
-def test_real_mode_is_gated_and_refuses_synthetic(repo_root: Path, tmp_path: Path) -> None:
+def test_real_mode_is_gated_and_refuses_synthetic(
+    repo_root: Path, tmp_path: Path, pre_execution_root: Path
+) -> None:
     images = _syn_tree(repo_root, tmp_path)
     kw = {"dataset_id": 777, "dataset_name": "Synth"}
-    with pytest.raises(ResearchGateError):  # real repository: train_main not authorized
+    with pytest.raises(ResearchGateError):  # pre-execution snapshot: train_main not authorized
         write_nnunet_dataset(
-            repo_root, images, _syn_schema(), tmp_path / "o1" / "Dataset777_Synth", **kw
+            pre_execution_root,
+            images,
+            _syn_schema(),
+            tmp_path / "o1" / "Dataset777_Synth",
+            **kw,
         )
     fake = make_status_repo(tmp_path / "repo", closed={"B1", "B2", "D1", "D2"})  # run_exp001 open
     with pytest.raises(ProvenanceError, match="SYNTHETIC_TEST_DATA cannot be converted"):

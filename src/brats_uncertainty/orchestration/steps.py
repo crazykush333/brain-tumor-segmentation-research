@@ -1134,7 +1134,9 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         if manifest is not None:
             if find_checkpoint(run_dir, "checkpoint_latest.pth"):
                 resume = True
-            elif f"restart:{job_id}" in ctx.approvals:
+            elif f"restart:{job_id}" in ctx.approvals or _recorded_restart_approval(
+                ctx, job_id, manifest
+            ):
                 restart = True
             else:
                 raise StepReview(
@@ -1166,14 +1168,18 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         from brats_uncertainty.compute.jobs import run_training_job
         from brats_uncertainty.compute.session import DeadlineRunner, persist_run
 
+        stdout_log = run_dir / "training_stdout.log"
         runner = (
-            DeadlineRunner(deadline, run_dir, stop_margin_s=settings.stop_margin_s)
+            DeadlineRunner(
+                deadline, run_dir, stop_margin_s=settings.stop_margin_s, log_path=stdout_log
+            )
             if deadline is not None
             else None
         )
         rec = run_training_job(
             ctx.repo_root,
             job,
+            nnunet_env=nnunet_paths(ctx),
             dataset_id=dataset_id,
             results_root=results_root,
             dataset_provenance=provenance,
@@ -1195,6 +1201,7 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
                 "(run the master runner again with --resume)",
             )
         if rec["status"] != "COMPLETED":
+            _publish_failure_log(ctx, job.experiment_id, run_dir, stdout_log, rec)
             raise StepBlocked(
                 f"{job_id}: run {rec['status']} after attempt {len(rec['attempts'])}",
                 "re-run with --resume: the run continues from its own verified checkpoint "
@@ -1203,6 +1210,28 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         return Outcome(PASSED, f"{job_id} COMPLETED", evidence=[run_dir.name])
 
     return execute
+
+
+RESTART_APPROVALS = Path("docs/research/execution/RESTART_APPROVALS.yaml")
+STARTUP_FAILURE_MAX_S = 600.0  # an attempt this short cannot have trained an epoch (248 s)
+
+
+def _recorded_restart_approval(ctx: Context, job_id: str, manifest: dict[str, Any]) -> bool:
+    """An owner-recorded restart for a run that never trained: no checkpoint (checked by the
+    caller) and every earlier attempt ended within minutes of starting."""
+    path = ctx.repo_root / RESTART_APPROVALS
+    if not path.is_file():
+        return False
+    entry = ((read_yaml(path) or {}).get("approvals") or {}).get(job_id)
+    if not entry or entry.get("decision") != "RESTART":
+        return False
+    for a in manifest.get("attempts") or []:
+        if not a.get("ended_at"):
+            return False
+        span = datetime.fromisoformat(a["ended_at"]) - datetime.fromisoformat(a["started_at"])
+        if span.total_seconds() > STARTUP_FAILURE_MAX_S:
+            return False
+    return True
 
 
 SESSION_RESTORE_MARKER = "session_restore.json"
@@ -1234,6 +1263,31 @@ def restore_session_runs(ctx: Context) -> Any:
     return settings
 
 
+def _publish_failure_log(
+    ctx: Context, experiment: str, run_dir: Path, log: Path, rec: dict[str, Any]
+) -> None:
+    """Commit-safe evidence of a failed training process (session storage is discarded)."""
+    from brats_uncertainty.compute.session import log_tail
+
+    last = (rec.get("attempts") or [{}])[-1]
+    dest = ctx.repo_root / "results" / experiment / "runs" / run_dir.name / "failure_log.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    write_json(
+        dest,
+        {
+            "run": run_dir.name,
+            "attempt": len(rec.get("attempts") or []),
+            "exit_code": last.get("exit_code"),
+            "started_at": last.get("started_at"),
+            "ended_at": last.get("ended_at"),
+            "log_tail": log_tail(log),
+            "note": "URL/credential-like and metric lines are omitted",
+        },
+        overwrite=True,
+    )
+    ctx.ops.milestone(f"data({experiment}): {run_dir.name} failure log")
+
+
 def _published_manifest(ctx: Context, experiment: str, run_dir: Path) -> dict[str, Any] | None:
     p = ctx.repo_root / "results" / experiment / "runs" / run_dir.name / "run_manifest.json"
     return read_json(p) if p.is_file() else None
@@ -1251,6 +1305,14 @@ def _publish_run_manifest(ctx: Context, experiment: str, run_dir: Path) -> None:
         ctx.ops.milestone(f"data({experiment}): {run_dir.name} run manifest ({status})")
 
 
+def nnunet_paths(ctx: Context) -> dict[str, str]:
+    """nnU-Net's raw/preprocessed roots of the main study dataset (session storage)."""
+    return {
+        "nnUNet_raw": str(ctx.work_dir / "nnUNet_raw"),
+        "nnUNet_preprocessed": str(ctx.work_dir / "nnUNet_preprocessed"),
+    }
+
+
 def _ensure_nnunet_dataset(ctx: Context) -> tuple[int, Path]:
     from brats_uncertainty.data.nnunet_dataset import write_nnunet_dataset
     from brats_uncertainty.data.schema import load_schema
@@ -1258,10 +1320,9 @@ def _ensure_nnunet_dataset(ctx: Context) -> tuple[int, Path]:
 
     tr = ctx.cfg["training"]
     did, name = int(tr["dataset_id"]), str(tr["dataset_name"])
-    raw_base = ctx.work_dir / "nnUNet_raw"
-    pre_base = ctx.work_dir / "nnUNet_preprocessed"
+    env = nnunet_paths(ctx)
+    raw_base, pre_base = Path(env["nnUNet_raw"]), Path(env["nnUNet_preprocessed"])
     raw = raw_base / f"Dataset{did:03d}_{name}"
-    env = {"nnUNet_raw": str(raw_base), "nnUNet_preprocessed": str(pre_base)}
     parts = split_partitions(ctx)
     if not raw.is_dir():
         write_nnunet_dataset(

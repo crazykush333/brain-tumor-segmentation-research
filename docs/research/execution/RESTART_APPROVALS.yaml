@@ -1,0 +1,20 @@
+# Restart approvals for protocol training runs whose earlier attempts left no checkpoint.
+# Read by brats_uncertainty.orchestration.steps (_recorded_restart_approval). An approval
+# applies only while the run has no checkpoint and every earlier attempt ended within
+# STARTUP_FAILURE_MAX_S (600 s; one epoch takes about 248 s on the measured platform):
+# a run that may have trained is never restarted from scratch through this file.
+recorded_for: Ayush Kushwaha (owner)
+date: '2026-10-07'
+context: >-
+  Kaggle version 9 (2026-10-06): all six runs exited with code 1 about 30 s after start,
+  before any epoch and without a checkpoint. Cause: the runner did not pass nnU-Net's data
+  locations (nnUNet_raw, nnUNet_preprocessed) to nnUNetv2_train ("Could not find a dataset
+  with the ID 501"); reproduced locally on SYNTHETIC data and fixed. No training took place,
+  so restarting is equivalent to starting; seeds, epochs, trainer and data are unchanged.
+approvals:
+  JOB-02: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-03: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-04: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-05: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-06: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-07: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}

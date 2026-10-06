@@ -329,6 +329,7 @@ def run_training_job(
     epochs: int = PROTOCOL_EPOCHS,
     runner: Callable[[Sequence[str], dict[str, str]], int] | None = None,
     checkpoint_inspector: Callable[..., dict[str, Any]] | None = None,
+    nnunet_env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Plan, start or (explicitly) resume one protocol training run; fully recorded.
 
@@ -414,7 +415,9 @@ def run_training_job(
     cmd = train_command(
         dataset_id, run, resume=decision.action == "resume", trainer=identity["trainer"]
     )
-    env = train_environment(run, run_dir)
+    # nnU-Net locates the raw and preprocessed dataset through these variables; without
+    # them nnUNetv2_train exits before the first epoch (Kaggle version 9, 2026-10-06)
+    env = {**(nnunet_env or {}), **train_environment(run, run_dir)}
     attempt["command"] = cmd
     manifest["attempts"].append(attempt)
     manifest.update(

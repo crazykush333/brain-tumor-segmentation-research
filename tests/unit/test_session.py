@@ -180,6 +180,9 @@ def test_training_step_pauses_at_the_session_budget(
 
     def fake_job(repo: Path, job: Any, *, results_root: Path, runner: Any, **kw: Any) -> dict:
         assert isinstance(runner, PausingRunner)  # a session budget applies on Kaggle
+        # nnU-Net must find the dataset (Kaggle version 9: all six runs exited without it)
+        assert kw["nnunet_env"]["nnUNet_preprocessed"].endswith("nnUNet_preprocessed")
+        assert kw["nnunet_env"]["nnUNet_raw"].endswith("nnUNet_raw")
         run_dir = _run(results_root, "arm_a_seed_0")
         return json.loads((run_dir / sess.MANIFEST_NAME).read_text(encoding="utf-8"))
 
@@ -227,3 +230,83 @@ def test_training_step_refuses_a_stale_restored_run(
     published.write_text(json.dumps(newer), encoding="utf-8")
     with pytest.raises(st.StepBlocked, match="not the latest committed one"):
         st.training_executor("JOB-02")(ctx)
+
+
+def test_recorded_restart_only_for_runs_that_never_trained(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.orchestration import steps as st
+
+    ctx = _training_ctx(tmp_path, monkeypatch)
+    short = {
+        "attempts": [
+            {"started_at": "2026-10-06T19:45:11+00:00", "ended_at": "2026-10-06T19:45:41+00:00"}
+        ]
+    }
+    long = {
+        "attempts": [
+            {"started_at": "2026-10-06T19:45:11+00:00", "ended_at": "2026-10-06T21:45:41+00:00"}
+        ]
+    }
+    assert not st._recorded_restart_approval(ctx, "JOB-02", short)  # no approvals file
+    rec = ctx.repo_root / st.RESTART_APPROVALS
+    rec.parent.mkdir(parents=True, exist_ok=True)
+    rec.write_text("approvals:\n  JOB-02: {decision: RESTART, reason: SYNTHETIC}\n", "utf-8")
+    assert st._recorded_restart_approval(ctx, "JOB-02", short)
+    assert not st._recorded_restart_approval(ctx, "JOB-02", long)  # it may have trained
+    assert not st._recorded_restart_approval(ctx, "JOB-03", short)  # not listed
+
+
+def test_failed_run_commits_a_filtered_failure_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.compute import jobs
+    from brats_uncertainty.orchestration import steps as st
+
+    ctx = _training_ctx(tmp_path, monkeypatch)
+
+    class Runner:
+        def __init__(self, deadline: float, run_dir: Path, **kw: Any) -> None:
+            self.stopped_at_deadline = False
+            log = kw["log_path"]
+            log.parent.mkdir(parents=True, exist_ok=True)
+            log.write_text(
+                "Traceback (most recent call last):\n"
+                "  see https://example.invalid/x\n"
+                "Pseudo dice [0.1]\n"
+                "RuntimeError: SYNTHETIC start-up failure\n",
+                encoding="utf-8",
+            )
+
+    def fake_job(repo: Path, job: Any, *, results_root: Path, **kw: Any) -> dict:
+        run_dir = _run(results_root, "arm_a_seed_0")
+        m = json.loads((run_dir / sess.MANIFEST_NAME).read_text(encoding="utf-8"))
+        m["attempts"] = [{"exit_code": 1, "started_at": "s", "ended_at": "e"}]
+        return m
+
+    monkeypatch.setattr(sess, "DeadlineRunner", Runner)
+    monkeypatch.setattr(jobs, "run_training_job", fake_job)
+    with pytest.raises(st.StepBlocked, match="run FAILED"):
+        st.training_executor("JOB-02")(ctx)
+    body = json.loads(
+        (ctx.repo_root / "results/MAIN/runs/arm_a_seed_0/failure_log.json").read_text("utf-8")
+    )
+    assert body["exit_code"] == 1 and body["log_tail"][-1].startswith("RuntimeError")
+    assert not any("https://" in ln or "dice" in ln.lower() for ln in body["log_tail"])
+
+
+def test_popen_tee_writes_the_log(tmp_path: Path) -> None:
+    import sys
+
+    log = tmp_path / "out.log"
+    proc = sess.popen_tee(
+        [sys.executable, "-c", "print('line one'); print('line two')"], dict(os.environ), log
+    )
+    assert proc.wait(timeout=60) == 0
+    for _ in range(50):
+        if "line two" in (log.read_text(encoding="utf-8") if log.is_file() else ""):
+            break
+        import time as _t
+
+        _t.sleep(0.1)
+    assert log.read_text(encoding="utf-8").splitlines() == ["line one", "line two"]

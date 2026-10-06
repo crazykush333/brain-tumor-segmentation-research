@@ -19,8 +19,11 @@ from its own verified checkpoint only.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
+import sys
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -144,6 +147,43 @@ def find_restore_source(settings: SessionSettings) -> Path | None:
     return hits[0] if hits else None  # pragma: no cover
 
 
+def popen_tee(cmd: Sequence[str], env: Mapping[str, str], log_path: Path) -> Any:
+    """Start a process whose output goes both to this console and to ``log_path``."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    fh = log_path.open("a", encoding="utf-8")
+    proc = subprocess.Popen(
+        list(cmd),
+        env={**env, "PYTHONUNBUFFERED": "1"},
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        errors="replace",
+        bufsize=1,
+    )
+
+    def pump() -> None:
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            fh.write(line)
+            fh.flush()
+        fh.close()
+
+    threading.Thread(target=pump, daemon=True).start()
+    return proc
+
+
+_UNSAFE_LINE = re.compile(r"https?://|token|passcode|secret|password|api[_-]?key|dice|aurc", re.I)
+
+
+def log_tail(log_path: Path, n: int = 80) -> list[str]:
+    """Last lines of a process log, without URL/credential-like or metric lines."""
+    if not log_path.is_file():
+        return []
+    lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    return [ln[:400] for ln in lines if not _UNSAFE_LINE.search(ln)][-n:]
+
+
 class DeadlineRunner:
     """Run a training command; stop it after a fresh checkpoint once the budget is near.
 
@@ -162,11 +202,12 @@ class DeadlineRunner:
         settle_s: float = 60.0,
         poll_s: float = 30.0,
         clock: Callable[[], float] = time.time,
-        popen: Callable[..., Any] = subprocess.Popen,
+        popen: Callable[..., Any] | None = None,
+        log_path: Path | None = None,
     ) -> None:
         self.deadline, self.checkpoint_dir = deadline, checkpoint_dir
         self.stop_margin_s, self.settle_s, self.poll_s = stop_margin_s, settle_s, poll_s
-        self.clock, self.popen = clock, popen
+        self.clock, self.popen, self.log_path = clock, popen, log_path
         self.stopped_at_deadline = False
         # set by compute.jobs for a resumed run: returns False once the log shows the run
         # did not continue at the checkpoint epoch / learning rate (then it is stopped)
@@ -188,7 +229,13 @@ class DeadlineRunner:
         return int(proc.returncode if proc.returncode is not None else -15)
 
     def __call__(self, cmd: Sequence[str], env: Mapping[str, str]) -> int:
-        proc = self.popen(list(cmd), env={**os.environ, **env})
+        full_env = {**os.environ, **env}
+        if self.popen is not None:
+            proc = self.popen(list(cmd), env=full_env)
+        elif self.log_path is not None:
+            proc = popen_tee(cmd, full_env, self.log_path)
+        else:
+            proc = subprocess.Popen(list(cmd), env=full_env)
         soft = self.deadline - self.stop_margin_s
         seen_at_soft: float | None = None
         while True:

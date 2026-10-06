@@ -138,7 +138,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B7",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "T_screen computed from positive controls; pairwise screen run"
     },
     {
@@ -321,7 +321,7 @@
       "detail": "T_screen and same-patient screen; after B6 has passed",
       "key": "b7",
       "label": "B7 Patient grouping",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "flagged pairs reviewed",

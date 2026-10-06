@@ -152,7 +152,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B9",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Patient groups frozen and committed (IDs only)"
     },
     {
@@ -333,7 +333,7 @@
       "detail": "patient groups frozen (IDs only)",
       "key": "b9",
       "label": "B9 Patient groups",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "created once",

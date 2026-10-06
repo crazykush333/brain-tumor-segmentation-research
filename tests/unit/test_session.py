@@ -405,3 +405,23 @@ def test_restore_commits_a_verified_transfer_record(
         st.restore_session_runs(ctx2)
     bad = list((ctx2.repo_root / "results/MAIN/runs/session-restore/sessions").glob("*.json"))
     assert bad and json.loads(bad[0].read_text(encoding="utf-8"))["passed"] is False
+
+
+def test_recorded_restart_is_scoped_to_the_failures_it_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.orchestration import steps as st
+
+    ctx = _training_ctx(tmp_path, monkeypatch)
+    rec = ctx.repo_root / st.RESTART_APPROVALS
+    rec.parent.mkdir(parents=True, exist_ok=True)
+    rec.write_text(
+        "approvals:\n  JOB-02: {decision: RESTART, "
+        'attempts_started_before: "2026-10-06T19:55:00+00:00", reason: SYNTHETIC}\n',
+        "utf-8",
+    )
+    v9 = {"started_at": "2026-10-06T19:45:11+00:00", "ended_at": "2026-10-06T19:45:41+00:00"}
+    later = {"started_at": "2026-10-06T20:30:00+00:00", "ended_at": "2026-10-06T20:30:30+00:00"}
+    assert st._recorded_restart_approval(ctx, "JOB-02", {"attempts": [v9]})
+    assert not st._recorded_restart_approval(ctx, "JOB-02", {"attempts": [v9, later]})
+    assert not st._recorded_restart_approval(ctx, "JOB-02", {"attempts": []})

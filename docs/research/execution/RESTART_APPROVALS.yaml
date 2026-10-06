@@ -1,7 +1,9 @@
 # Restart approvals for protocol training runs whose earlier attempts left no checkpoint.
 # Read by brats_uncertainty.orchestration.steps (_recorded_restart_approval). An approval
 # applies only while the run has no checkpoint and every earlier attempt ended within
-# STARTUP_FAILURE_MAX_S (600 s; one epoch takes about 248 s on the measured platform):
+# STARTUP_FAILURE_MAX_S (600 s; one epoch takes about 248 s on the measured platform) and,
+# when attempts_started_before is given, only to attempts that started before it (the
+# version-9 attempts, 19:45-19:48 UTC); any later failure needs its own review:
 # a run that may have trained is never restarted from scratch through this file.
 recorded_for: Ayush Kushwaha (owner)
 date: '2026-10-07'
@@ -12,9 +14,9 @@ context: >-
   with the ID 501"); reproduced locally on SYNTHETIC data and fixed. No training took place,
   so restarting is equivalent to starting; seeds, epochs, trainer and data are unchanged.
 approvals:
-  JOB-02: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
-  JOB-03: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
-  JOB-04: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
-  JOB-05: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
-  JOB-06: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
-  JOB-07: {decision: RESTART, reason: "start-up failure before epoch 0 (no checkpoint)"}
+  JOB-02: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}
+  JOB-03: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}
+  JOB-04: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}
+  JOB-05: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}
+  JOB-06: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}
+  JOB-07: {decision: RESTART, attempts_started_before: "2026-10-06T19:55:00+00:00", reason: "version-9 missing-dataset start-up failure (exit 1 after 30 s, before epoch 0, no checkpoint)"}

@@ -1265,18 +1265,27 @@ STARTUP_FAILURE_MAX_S = 600.0  # an attempt this short cannot have trained an ep
 
 def _recorded_restart_approval(ctx: Context, job_id: str, manifest: dict[str, Any]) -> bool:
     """An owner-recorded restart for a run that never trained: no checkpoint (checked by the
-    caller) and every earlier attempt ended within minutes of starting."""
+    caller), every earlier attempt ended within minutes of starting, and - when the record
+    names the failure it covers - every attempt started before ``attempts_started_before``
+    (a later, unexplained failure is never covered)."""
     path = ctx.repo_root / RESTART_APPROVALS
     if not path.is_file():
         return False
     entry = ((read_yaml(path) or {}).get("approvals") or {}).get(job_id)
     if not entry or entry.get("decision") != "RESTART":
         return False
-    for a in manifest.get("attempts") or []:
+    cutoff = entry.get("attempts_started_before")
+    attempts = manifest.get("attempts") or []
+    if not attempts:
+        return False
+    for a in attempts:
         if not a.get("ended_at"):
             return False
-        span = datetime.fromisoformat(a["ended_at"]) - datetime.fromisoformat(a["started_at"])
+        started = datetime.fromisoformat(a["started_at"])
+        span = datetime.fromisoformat(a["ended_at"]) - started
         if span.total_seconds() > STARTUP_FAILURE_MAX_S:
+            return False
+        if cutoff and started >= datetime.fromisoformat(str(cutoff)):
             return False
     return True
 

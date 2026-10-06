@@ -99,8 +99,8 @@ gates:
   - {id: B6, title: "Counts derived from the hashed crosswalk and checked against the protocol targets", status: PASSED, evidence: "docs/data/records/B6.json", closed_on: "2026-10-06"}
   - {id: B7, title: "T_screen computed from positive controls; pairwise screen run", status: PASSED, evidence: "docs/data/records/B7/t_screen.json", closed_on: "2026-10-06"}
   - {id: B8, title: "Flagged pairs manually reviewed", status: PASSED, evidence: "docs/data/records/B8_review_record.json", closed_on: "2026-10-06"}
-  - {id: B9, title: "Patient groups frozen and committed (IDs only)", status: RUNNING, evidence: null, closed_on: null}
-  - {id: B10, title: "Final split created once", status: LOCKED, evidence: null, closed_on: null}
+  - {id: B9, title: "Patient groups frozen and committed (IDs only)", status: PASSED, evidence: "splits/patient_groups_dev.csv", closed_on: "2026-10-06"}
+  - {id: B10, title: "Final split created once", status: AUTHORIZED, evidence: null, closed_on: null}
   - {id: B11, title: "Split assertions pass", status: LOCKED, evidence: null, closed_on: null}
   - {id: B12, title: "Split hashes recorded", status: LOCKED, evidence: null, closed_on: null}
   # --- C: pre-external-evaluation gates -----------------------------------------

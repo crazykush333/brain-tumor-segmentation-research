@@ -149,17 +149,17 @@
       "title": "Flagged pairs manually reviewed"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "B",
       "id": "B9",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Patient groups frozen and committed (IDs only)"
     },
     {
       "closed_on": null,
       "group": "B",
       "id": "B10",
-      "status": "LOCKED",
+      "status": "AUTHORIZED",
       "title": "Final split created once"
     },
     {
@@ -333,13 +333,13 @@
       "detail": "patient groups frozen (IDs only)",
       "key": "b9",
       "label": "B9 Patient groups",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "created once",
       "key": "b10",
       "label": "B10 Final split",
-      "status": "LOCKED"
+      "status": "AUTHORIZED"
     },
     {
       "detail": "split assertions pass",

@@ -240,10 +240,10 @@
       "title": "Pilot restricted to site != 1 development cases"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "D",
       "id": "D4",
-      "status": "NOT_STARTED",
+      "status": "CLOSED",
       "title": "Pilot computes no label-based scientific metrics"
     },
     {

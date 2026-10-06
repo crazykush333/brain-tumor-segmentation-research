@@ -310,3 +310,23 @@ def test_popen_tee_writes_the_log(tmp_path: Path) -> None:
 
         _t.sleep(0.1)
     assert log.read_text(encoding="utf-8").splitlines() == ["line one", "line two"]
+
+
+def test_other_runs_wait_for_the_train_a0_transfer_proof(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.compute import jobs
+    from brats_uncertainty.orchestration import steps as st
+
+    ctx = _training_ctx(tmp_path, monkeypatch)
+    monkeypatch.setattr(jobs, "run_training_job", lambda *a, **k: pytest.fail("must not run"))
+    with pytest.raises(st.StepBlocked, match="waits until TRAIN-A0 has proven"):
+        st.training_executor("JOB-03")(ctx)  # TRAIN-A1
+    proof = ctx.repo_root / st.TRANSFER_PROOF_MANIFEST
+    proof.parent.mkdir(parents=True)
+    half = {"checkpoint": {"passed": True}, "log": None}
+    proof.write_text(json.dumps({"attempts": [{"resume_verification": half}]}), "utf-8")
+    assert not st.transfer_proven(ctx)  # the resumed epoch was never confirmed
+    full = {"checkpoint": {"passed": True}, "log": {"passed": True}}
+    proof.write_text(json.dumps({"attempts": [{"resume_verification": full}]}), "utf-8")
+    assert st.transfer_proven(ctx)

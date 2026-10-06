@@ -1091,6 +1091,12 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         from brats_uncertainty.models.nnunet import run_namespace
 
         job = load_jobs(ctx.repo_root)[job_id]
+        if job_id != TRANSFER_PROOF_JOB and not transfer_proven(ctx):
+            raise StepBlocked(
+                f"{job_id}: waits until TRAIN-A0 has proven the cross-session checkpoint "
+                "transfer (a verified resume: checkpoint content and resumed epoch/lr)",
+                "continue TRAIN-A0 in the next session (master runner --resume)",
+            )
         from brats_uncertainty.orchestration.study_steps import (
             _set_status,
             planned_epochs,
@@ -1210,6 +1216,23 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
         return Outcome(PASSED, f"{job_id} COMPLETED", evidence=[run_dir.name])
 
     return execute
+
+
+TRANSFER_PROOF_JOB = "JOB-02"  # TRAIN-A0 proves the cross-session transfer first
+TRANSFER_PROOF_MANIFEST = Path("results/MAIN/runs/arm_a_seed_0/run_manifest.json")
+
+
+def transfer_proven(ctx: Context) -> bool:
+    """TRAIN-A0's committed manifest shows a resume whose checkpoint check and whose
+    resumed-epoch/learning-rate log check both passed (compute.resume_verification)."""
+    path = ctx.repo_root / TRANSFER_PROOF_MANIFEST
+    if not path.is_file():
+        return False
+    for attempt in read_json(path).get("attempts") or []:
+        rv = attempt.get("resume_verification") or {}
+        if (rv.get("checkpoint") or {}).get("passed") and (rv.get("log") or {}).get("passed"):
+            return True
+    return False
 
 
 RESTART_APPROVALS = Path("docs/research/execution/RESTART_APPROVALS.yaml")

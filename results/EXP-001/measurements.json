@@ -1,0 +1,46 @@
+{
+  "experiment": "EXP-001",
+  "gpu_names": [
+    "Tesla T4"
+  ],
+  "metric_s_per_case_condition_cpu": 12.007500843333522,
+  "not_measurable_on_platform": [
+    "p100_epoch_time_s",
+    "concurrent_2gpu_epoch_time_s",
+    "quota_h_week",
+    "session_limit_h"
+  ],
+  "planned_preprocessed_cases": 397,
+  "projection_inputs": {
+    "concurrency_gain": null,
+    "cpu_bound": true,
+    "infer_s_per_case_condition": 3.40699007367999,
+    "median_epoch_s": 248.26,
+    "metric_s_per_case_condition_on_gpu": 0.0,
+    "overhead_frac": 0.12595671573634154,
+    "peak_mem_fits_default_plan": true,
+    "platform": "kaggle",
+    "quota_h_week": null,
+    "resume_pass": false,
+    "session_limit_h": null
+  },
+  "spec_quantities": {
+    "concurrent_2gpu_epoch_time_s": "not measurable on this platform",
+    "disk_gb": {
+      "preprocessed": 0.6960305711254478,
+      "raw": 0.4859366547316313,
+      "results": 2.29825028590858
+    },
+    "disk_writable_gb": 1040.8805084228516,
+    "gpu_util_mean": 33.76512455516014,
+    "infer_s_per_case_condition": 3.40699007367999,
+    "p100_epoch_time_s": "not measurable on this platform",
+    "peak_mem_gb": 9.8095703125,
+    "preproc_s_per_case": 3.1359128981000026,
+    "quota_h_week": "not measurable on this platform",
+    "resume_pass": false,
+    "seed_epoch_time_cv": 0.040647696322864815,
+    "session_limit_h": "not measurable on this platform",
+    "single_gpu_epoch_time_s": 248.26
+  }
+}

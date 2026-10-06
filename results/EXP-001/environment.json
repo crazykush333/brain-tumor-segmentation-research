@@ -1,0 +1,13 @@
+{
+  "cpu_count": 4,
+  "cuda": "12.8",
+  "environment": "kaggle",
+  "gpu": "Tesla T4",
+  "nnunetv2": "2.8.1",
+  "numpy": "2.1.3",
+  "os": "Linux-6.18.48+-x86_64-with-glibc2.39",
+  "python": "3.13.15",
+  "ram_total_bytes": 33658314752,
+  "torch": "2.11.0+cu128",
+  "vram_bytes": 15636037632
+}

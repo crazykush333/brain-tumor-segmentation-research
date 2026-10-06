@@ -1,0 +1,9 @@
+{
+  "completed": true,
+  "expected_lr_at_resume": 0.0043838329055408696,
+  "first_attempt_epochs_logged": 5,
+  "killed_after_epoch": 3,
+  "logged_lr_at_resume": null,
+  "resume_pass": false,
+  "resumed_at_epoch": null
+}

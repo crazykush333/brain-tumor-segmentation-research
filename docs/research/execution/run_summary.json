@@ -12,9 +12,9 @@
     "B3": "PASSED",
     "B4": "PASSED",
     "B5": "PASSED",
-    "B6": "RUNNING",
-    "B7": "LOCKED",
-    "B8": "LOCKED",
+    "B6": "PASSED",
+    "B7": "PASSED",
+    "B8": "RUNNING",
     "B9": "LOCKED",
     "C1": "NOT_STARTED",
     "C2": "NOT_STARTED",
@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "349c02663ae0f681f84f1104f8187ce0d968c330",
+  "git_commit": "0f3672c04bc3c1ea152721c4929ef6c7c84a0241",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -60,39 +60,39 @@
       "summary": ""
     },
     "B2": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B2 PASSED: official acquisition"
+      "summary": "gate B2 closed (project status)"
     },
     "B3": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B3 PASSED: crosswalk hash"
+      "summary": "gate B3 closed (project status)"
     },
     "B4": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B4 PASSED: UCSF metadata hash"
+      "summary": "gate B4 closed (project status)"
     },
     "B5": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B5 PASSED: raw data manifest"
+      "summary": "gate B5 closed (project status)"
     },
     "B6": {
-      "attempts": 1,
-      "status": "FAILED",
-      "summary": "integrity/protocol assertion failed: crosswalk is missing expected columns: ['Data Collection', 'TCIA PatientID']"
+      "attempts": 0,
+      "status": "PASSED",
+      "summary": "gate B6 closed (project status)"
     },
     "B7": {
       "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "status": "PASSED",
+      "summary": "gate B7 closed (project status)"
     },
     "B8": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "REVIEW_REQUIRED",
+      "summary": "B8 automated adjudication failed its pre-specified acceptance criteria: ['controls_above_tau_neg', 'max_group_size']"
     },
     "B9": {
       "attempts": 0,
@@ -159,10 +159,15 @@
       "status": "LOCKED",
       "summary": ""
     },
+    "DATA": {
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "session data re-acquired via the recorded official route; identical to the B2 inventory (6258 files)"
+    },
     "ENV": {
       "attempts": 1,
       "status": "PASSED",
-      "summary": "kaggle: GPU Tesla T4, status READY_WITH_LIMITS"
+      "summary": "kaggle: GPU none, status NOT_READY"
     },
     "EXTERNAL_AFRICA": {
       "attempts": 0,
@@ -186,8 +191,8 @@
     },
     "PILOT": {
       "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "status": "BLOCKED",
+      "summary": "compute environment not ready for JOB-PILOT: no CUDA GPU available (nnU-Net v2 3d_fullres training/inference)"
     },
     "STATISTICS": {
       "attempts": 0,

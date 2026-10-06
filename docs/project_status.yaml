@@ -116,7 +116,7 @@ gates:
   - {id: D3, title: "Pilot restricted to site != 1 development cases", status: CLOSED, evidence: "results/EXP-001/constraints.json", closed_on: "2026-10-06"}
   - {id: D4, title: "Pilot computes no label-based scientific metrics", status: CLOSED, evidence: "results/EXP-001/constraints.json", closed_on: "2026-10-06"}
   - {id: D5, title: "No site-1 or BraTS-Africa data in the pilot", status: CLOSED, evidence: "results/EXP-001/constraints.json", closed_on: "2026-10-06"}
-  - {id: D6, title: "Compute consequences (SR1, SR6, SR8) applied before main training", status: NOT_STARTED, evidence: null, closed_on: null}
+  - {id: D6, title: "Compute consequences (SR1, SR6, SR8) applied before main training", status: CLOSED, evidence: "docs/research/execution/D6_OWNER_DECISION.yaml", closed_on: "2026-10-06"}
 
 experiments:
   EXP-001: {status: COMPLETED, metadata: experiments/EXP-001/metadata.yaml}

@@ -353,7 +353,9 @@ def _cmd_audit_split(root: Path, args: argparse.Namespace) -> int:
     result = audit(root)
     out = root / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(_json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out.write_text(
+        _json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
     if args.report:
         rep = root / args.report
         rep.parent.mkdir(parents=True, exist_ok=True)

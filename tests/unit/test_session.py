@@ -281,7 +281,16 @@ def test_failed_run_commits_a_filtered_failure_log(
     def fake_job(repo: Path, job: Any, *, results_root: Path, **kw: Any) -> dict:
         run_dir = _run(results_root, "arm_a_seed_0")
         m = json.loads((run_dir / sess.MANIFEST_NAME).read_text(encoding="utf-8"))
-        m["attempts"] = [{"exit_code": 1, "started_at": "s", "ended_at": "e"}]
+        m["checkpoint"] = None
+        m["attempts"] = [
+            {
+                "exit_code": 1,
+                "started_at": "2026-10-06T19:45:11+00:00",
+                "ended_at": "2026-10-06T19:45:41+00:00",
+                "command": ["nnUNetv2_train", "501"],
+                "training_log": {"trained": False},
+            }
+        ]
         return m
 
     monkeypatch.setattr(sess, "DeadlineRunner", Runner)
@@ -292,6 +301,10 @@ def test_failed_run_commits_a_filtered_failure_log(
         (ctx.repo_root / "results/MAIN/runs/arm_a_seed_0/failure_log.json").read_text("utf-8")
     )
     assert body["exit_code"] == 1 and body["log_tail"][-1].startswith("RuntimeError")
+    assert body["phase"] == "TRAINING" and body["command"] == ["nnUNetv2_train", "501"]
+    assert body["any_epoch_trained"] is False and body["checkpoint"] is None
+    assert body["restart_from_scratch_permissible"] is True
+    assert "RESTART_APPROVALS" in body["recommended_next_action"]
     assert not any("https://" in ln or "dice" in ln.lower() for ln in body["log_tail"])
 
 
@@ -330,3 +343,65 @@ def test_other_runs_wait_for_the_train_a0_transfer_proof(
     full = {"checkpoint": {"passed": True}, "log": {"passed": True}}
     proof.write_text(json.dumps({"attempts": [{"resume_verification": full}]}), "utf-8")
     assert st.transfer_proven(ctx)
+
+
+def test_restore_commits_a_verified_transfer_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import shutil
+
+    from brats_uncertainty.compute import resume_verification as rv
+    from brats_uncertainty.orchestration import steps as st
+    from brats_uncertainty.protocol import load_protocol
+    from tests.conftest import REPO_ROOT
+
+    prev = tmp_path / "previous_output"
+    ctx = _training_ctx(tmp_path, monkeypatch, BRATS_RESTORE_DIR=str(prev))
+    monkeypatch.setattr(sess, "find_restore_source", lambda settings: settings.restore_dir)
+    for rel in (
+        "configs/protocol/protocol_v1.0.yaml",
+        "docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md",
+    ):
+        (ctx.repo_root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO_ROOT / rel, ctx.repo_root / rel)
+    # a run paused by the previous session, persisted into its output
+    src_results = tmp_path / "s1" / "nnunet_results"
+    run_dir = _run(src_results)
+    m = json.loads((run_dir / sess.MANIFEST_NAME).read_text(encoding="utf-8"))
+    cfg = "configs/compute/remote_compute.yaml"
+    m.update(
+        trainer="nnUNetTrainer_BratsUnc_250ep",
+        epochs_planned=250,
+        protocol_sha256=load_protocol(ctx.repo_root).raw["protocol"]["sha256"],
+        split_sha256="b" * 64,
+        config_sha256={cfg: sha256_file(ctx.repo_root / cfg)},
+        attempts=[{"session": 1, "lineage": "arm_a_seed_0 -> session 1 -> ..."}],
+    )
+    (run_dir / sess.MANIFEST_NAME).write_text(json.dumps(m), encoding="utf-8")
+    sess.persist_run(run_dir, src_results, prev)
+    lrs = [rv.poly_lr(e, 250) for e in range(120)]
+    fake = {
+        "current_epoch": 120,
+        "trainer_name": "nnUNetTrainer_BratsUnc_250ep",
+        "init_args": {"configuration": "3d_fullres", "fold": 0},
+        "optimizer_state": {"state": {0: 1}, "param_groups": [{"lr": lrs[-1]}]},
+        "grad_scaler_state": {"scale": 1.0},
+        "logging": {"lrs": lrs, "epoch_end_timestamps": lrs},
+    }
+    monkeypatch.setattr(rv, "_torch_load", lambda p: fake)
+
+    st.restore_session_runs(ctx)
+    recs = list((ctx.repo_root / "results/MAIN/runs/arm_a_seed_0/sessions").glob("transfer_*.json"))
+    assert len(recs) == 1
+    rec = json.loads(recs[0].read_text(encoding="utf-8"))
+    assert rec["passed"], rec["checks"]
+    assert rec["next_expected_epoch"] == 120 and rec["inspection"]["grad_scaler_state"]
+
+    # a changed checkpoint in the output is refused with a committed failure record
+    ctx2 = _training_ctx(tmp_path / "b", monkeypatch, BRATS_RESTORE_DIR=str(prev))
+    monkeypatch.setattr(sess, "find_restore_source", lambda settings: settings.restore_dir)
+    next(prev.rglob("checkpoint_latest.pth")).write_bytes(b"tampered")
+    with pytest.raises(st.StepFailed, match="session restore failed"):
+        st.restore_session_runs(ctx2)
+    bad = list((ctx2.repo_root / "results/MAIN/runs/session-restore/sessions").glob("*.json"))
+    assert bad and json.loads(bad[0].read_text(encoding="utf-8"))["passed"] is False

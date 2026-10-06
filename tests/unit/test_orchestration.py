@@ -724,3 +724,44 @@ def test_b8_never_renders_an_unreviewable_number_of_pairs(
     assert calls == [False]  # queue and template only; no figure is drawn
     assert "owner decision required" in e.value.action
     assert not (ctx.records / "B8_review_record.json").exists()  # never passed automatically
+
+
+def test_push_replays_milestones_when_the_remote_moved(tmp_path: Path) -> None:
+    """A code fix pushed while a session runs must not break the session's pushes."""
+    import subprocess
+
+    from brats_uncertainty.orchestration import gitops
+
+    def git(cwd: Path, *a: str) -> str:
+        return subprocess.run(
+            ["git", *a], cwd=cwd, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    remote = tmp_path / "remote.git"
+    git(tmp_path, "init", "-q", "--bare", "-b", "main", str(remote))
+    seed = tmp_path / "seed"
+    git(tmp_path, "clone", "-q", str(remote), str(seed))
+    for repo in (seed,):
+        git(repo, "config", "user.name", "Ayush Kushwaha")
+        git(repo, "config", "user.email", "ayush@example.invalid")
+    (seed / "code.py").write_text("x = 1\n", encoding="utf-8")
+    git(seed, "add", "-A")
+    git(seed, "commit", "-q", "-m", "initial")
+    git(seed, "push", "-q", "origin", "HEAD:refs/heads/main")
+    session = tmp_path / "session"  # a hosted session clones, then works for hours
+    git(tmp_path, "clone", "-q", str(remote), str(session))
+    git(session, "config", "user.name", "Ayush Kushwaha")
+    git(session, "config", "user.email", "ayush@example.invalid")
+    (seed / "code.py").write_text("x = 2\n", encoding="utf-8")  # a fix pushed meanwhile
+    git(seed, "commit", "-q", "-am", "fix")
+    git(seed, "push", "-q", "origin", "HEAD:refs/heads/main")
+    (session / "results").mkdir()
+    (session / "results" / "run_manifest.json").write_text("{}\n", encoding="utf-8")
+    git(session, "add", "-A")
+    git(session, "commit", "-q", "-m", "data(MAIN): run manifest")
+    import os
+
+    head = gitops.push(session, {"remote": "origin", "branch": "main"}, dict(os.environ))
+    assert git(seed, "ls-remote", "origin", "refs/heads/main").split()[0] == head
+    log = git(session, "log", "--format=%s", "-3").splitlines()
+    assert log == ["data(MAIN): run manifest", "fix", "initial"]  # replayed, not forced

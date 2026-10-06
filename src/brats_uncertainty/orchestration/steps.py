@@ -16,6 +16,7 @@ decision or an unimplemented executor is reported, not worked around.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import shlex
 import shutil
@@ -1182,23 +1183,46 @@ def training_executor(job_id: str) -> Callable[[Context], Outcome]:
             if deadline is not None
             else None
         )
-        rec = run_training_job(
-            ctx.repo_root,
-            job,
-            nnunet_env=nnunet_paths(ctx),
-            dataset_id=dataset_id,
-            results_root=results_root,
-            dataset_provenance=provenance,
-            manifest_sha256=str(b5["manifest_sha256"]),
-            split_sha256=str(hashes["split_all_csv_sha256"]),
-            resume=resume,
-            restart_without_checkpoint=restart,
-            epochs=epochs,
-            runner=runner,
-        )
-        if settings.persist_dir is not None:
+        from brats_uncertainty.compute.run_evidence import GpuSampler, gpu_summary
+        from brats_uncertainty.errors import ProvenanceError
+
+        prior = read_manifest(run_dir)
+        session_no = len(prior["attempts"]) + 1 if prior else 1
+        gpu_csv = run_dir / f"gpu_samples_session{session_no}.csv"
+        failure: ProvenanceError | None = None
+        with GpuSampler(gpu_csv) if deadline is not None else contextlib.nullcontext():
+            try:
+                rec = run_training_job(
+                    ctx.repo_root,
+                    job,
+                    nnunet_env=nnunet_paths(ctx),
+                    dataset_id=dataset_id,
+                    results_root=results_root,
+                    dataset_provenance=provenance,
+                    manifest_sha256=str(b5["manifest_sha256"]),
+                    split_sha256=str(hashes["split_all_csv_sha256"]),
+                    resume=resume,
+                    restart_without_checkpoint=restart,
+                    epochs=epochs,
+                    runner=runner,
+                )
+            except ProvenanceError as exc:  # e.g. a failed resume verification
+                failure = exc
+                rec = read_manifest(run_dir) or {"attempts": [], "status": "FAILED"}
+        if rec.get("attempts"):
+            rec["attempts"][-1]["gpu"] = gpu_summary(gpu_csv)
+            if (run_dir / "run_manifest.json").is_file():
+                write_json(run_dir / "run_manifest.json", rec, overwrite=True)
+        if settings.persist_dir is not None and run_dir.is_dir():
             persist_run(run_dir, results_root, settings.persist_dir)
         _publish_run_manifest(ctx, job.experiment_id, run_dir)  # committed at the milestone
+        if failure is not None:
+            _publish_failure_log(ctx, job.experiment_id, run_dir, stdout_log, rec, error=failure)
+            raise StepFailed(
+                f"{job_id}: {failure}",
+                "the run is stopped safely and is not restarted from scratch; see "
+                f"results/{job.experiment_id}/runs/{run_dir.name}/failure_log.json",
+            )
         if rec["status"] != "COMPLETED" and runner is not None and runner.stopped_at_deadline:
             raise StepBlocked(
                 f"{job_id}: paused at this session's time budget (checkpoint "
@@ -1273,36 +1297,166 @@ def restore_session_runs(ctx: Context) -> Any:
     marker = ctx.work_dir / SESSION_RESTORE_MARKER
     if marker.is_file():
         return settings
+    from brats_uncertainty.errors import ProvenanceError
+
     source = find_restore_source(settings)
-    restored = (
-        restore_runs(source, ctx.work_dir / "nnunet_results", settings.persist_dir)
-        if source is not None
-        else []
-    )
+    results_root = ctx.work_dir / "nnunet_results"
+    try:
+        restored = (
+            restore_runs(source, results_root, settings.persist_dir) if source is not None else []
+        )
+    except ProvenanceError as exc:
+        _commit_transfer_record(
+            ctx, "MAIN", "session-restore", {"passed": False, "error": str(exc)}
+        )
+        raise StepFailed(
+            f"session restore failed: {exc}",
+            "the affected run is stopped and never restarted from scratch; inspect the "
+            "committed transfer record",
+        ) from exc
     if restored:
         print(f"session restore: {len(restored)} run director(ies) restored from {source}")
+    for rel in restored:
+        run_dir = results_root / rel
+        rec = transfer_record(ctx, run_dir, source)
+        _commit_transfer_record(ctx, run_dir.parent.name, run_dir.name, rec)
+        print(f"session restore: {rel}: transfer checks {'PASS' if rec['passed'] else 'FAIL'}")
     marker.parent.mkdir(parents=True, exist_ok=True)
     write_json(marker, {"source": str(source) if source else None, "restored": restored})
     return settings
 
 
+def transfer_record(ctx: Context, run_dir: Path, source: Path | None) -> dict[str, Any]:
+    """Independent checks of a run restored from a previous session's output."""
+    from brats_uncertainty.compute.resume_verification import inspect_checkpoint
+    from brats_uncertainty.compute.run_evidence import training_log_summary
+    from brats_uncertainty.protocol import load_protocol
+    from brats_uncertainty.utils.hashing import sha256_file
+
+    m = read_json(run_dir / "run_manifest.json")
+    ck = m.get("checkpoint") or {}
+    path = run_dir / ck["path"] if ck.get("path") else None
+    actual = sha256_file(path) if path is not None and path.is_file() else None
+    try:
+        inspection = (
+            inspect_checkpoint(
+                path, trainer=str(m.get("trainer")), num_epochs=int(m.get("epochs_planned") or 250)
+            )
+            if path is not None
+            else {"passed": False, "error": "no checkpoint recorded"}
+        )
+    except Exception as exc:  # recorded; the resume itself fails closed on it
+        inspection = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
+    split = read_json(ctx.splits / "split_hashes.json")["split_all_csv_sha256"]
+    protocol_sha = str(load_protocol(ctx.repo_root).raw["protocol"]["sha256"])
+    configs = m.get("config_sha256") or {}
+    checks = {
+        "checkpoint_present": actual is not None,
+        "checkpoint_sha256_matches_manifest": actual is not None and actual == ck.get("sha256"),
+        "checkpoint_content_verified": bool(inspection.get("passed")),
+        "protocol_sha256_unchanged": m.get("protocol_sha256") == protocol_sha,
+        "split_sha256_unchanged": m.get("split_sha256") == split,
+        "configs_and_training_code_unchanged": bool(configs)
+        and all(
+            (ctx.repo_root / k).is_file() and sha256_file(ctx.repo_root / k) == v
+            for k, v in configs.items()
+        ),
+    }
+    last = (m.get("attempts") or [{}])[-1]
+    return {
+        "run": run_dir.name,
+        "restored_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        "restored_from": str(source) if source else None,
+        "status_at_restore": m.get("status"),
+        "trainer": m.get("trainer"),
+        "arm": m.get("arm"),
+        "seed": m.get("seed"),
+        "epochs_planned": m.get("epochs_planned"),
+        "checkpoint": {
+            "path": ck.get("path"),
+            "sha256_recorded": ck.get("sha256"),
+            "sha256": actual,
+        },
+        "inspection": inspection,
+        "training_log": training_log_summary(run_dir),
+        "previous_session": {
+            k: last.get(k)
+            for k in ("session", "started_at", "ended_at", "exit_code", "lineage", "gpu_hours")
+        },
+        "next_expected_epoch": inspection.get("checkpoint_epoch"),
+        "checks": checks,
+        "passed": all(checks.values()),
+    }
+
+
+def _commit_transfer_record(ctx: Context, experiment: str, run: str, rec: dict[str, Any]) -> None:
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    dest = (
+        ctx.repo_root
+        / "results"
+        / experiment
+        / "runs"
+        / run
+        / "sessions"
+        / f"transfer_{stamp}.json"
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    write_json(dest, rec, overwrite=True)
+    ctx.ops.milestone(f"data({experiment}): {run} checkpoint-transfer record")
+
+
 def _publish_failure_log(
-    ctx: Context, experiment: str, run_dir: Path, log: Path, rec: dict[str, Any]
+    ctx: Context,
+    experiment: str,
+    run_dir: Path,
+    log: Path,
+    rec: dict[str, Any],
+    *,
+    error: BaseException | None = None,
 ) -> None:
-    """Commit-safe evidence of a failed training process (session storage is discarded)."""
+    """Commit-safe, machine-readable record of a failed training attempt (session storage
+    is discarded): what ran, what failed, the checkpoint state, whether any epoch trained,
+    whether a restart from scratch would be permissible, and the next action."""
     from brats_uncertainty.compute.session import log_tail
 
-    last = (rec.get("attempts") or [{}])[-1]
+    attempts = rec.get("attempts") or [{}]
+    last = attempts[-1]
+    trained = any((a.get("training_log") or {}).get("trained") for a in attempts)
+    checkpoint = rec.get("checkpoint")
+    short = True
+    for a in attempts:
+        if not (a.get("started_at") and a.get("ended_at")):
+            short = False
+            continue
+        span = datetime.fromisoformat(a["ended_at"]) - datetime.fromisoformat(a["started_at"])
+        short = short and span.total_seconds() <= STARTUP_FAILURE_MAX_S
+    restart_ok = checkpoint is None and not trained and short
+    if error is not None:
+        action = "investigate the failed invariant; the run is stopped and never restarted silently"
+    elif checkpoint is not None:
+        action = "fix the cause, then resume from the recorded checkpoint (master runner --resume)"
+    elif restart_ok:
+        action = "fix the cause; a restart is permissible once recorded in RESTART_APPROVALS.yaml"
+    else:
+        action = "owner review: the run may have trained but left no checkpoint"
     dest = ctx.repo_root / "results" / experiment / "runs" / run_dir.name / "failure_log.json"
     dest.parent.mkdir(parents=True, exist_ok=True)
     write_json(
         dest,
         {
             "run": run_dir.name,
+            "phase": "TRAINING",
+            "timestamp": datetime.now(UTC).replace(microsecond=0).isoformat(),
             "attempt": len(rec.get("attempts") or []),
+            "command": last.get("command"),
             "exit_code": last.get("exit_code"),
+            "error": str(error) if error is not None else None,
             "started_at": last.get("started_at"),
             "ended_at": last.get("ended_at"),
+            "checkpoint": checkpoint,
+            "any_epoch_trained": trained,
+            "restart_from_scratch_permissible": restart_ok,
+            "recommended_next_action": action,
             "log_tail": log_tail(log),
             "note": "URL/credential-like and metric lines are omitted",
         },
@@ -1710,7 +1864,12 @@ class RealOps:
         if sha:
             self.commits.append(sha)
             if self.push_enabled:
-                gitops.push(self.repo_root, self.cfg["git"], self.environ)
+                try:
+                    gitops.push(self.repo_root, self.cfg["git"], self.environ)
+                except BratsUncertaintyError as exc:
+                    # never let a push problem stop running work: the commit stays local
+                    # and the next milestone (or the session wrap-up) pushes it
+                    print(f"milestone push deferred: {exc}")
         return sha
 
     def run(

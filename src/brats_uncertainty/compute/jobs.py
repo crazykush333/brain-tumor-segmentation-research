@@ -338,6 +338,7 @@ def run_training_job(
     it runs (when the runner supports a ``resume_watch``). Either failure fails closed.
     """
     from brats_uncertainty.compute.resume_verification import ResumeWatch, inspect_checkpoint
+    from brats_uncertainty.compute.run_evidence import lineage, training_log_summary
 
     if synthetic_test_mode:
         if is_within(results_root, repo_root):
@@ -369,12 +370,11 @@ def run_training_job(
     if decision.action == "refuse":
         raise ProvenanceError(f"{job.job_id}: {decision.reason}")
     resume_check: dict[str, Any] | None = None
-    if decision.action == "resume" and decision.checkpoint is not None:
-        inspector = checkpoint_inspector or (None if synthetic_test_mode else inspect_checkpoint)
-        if inspector is not None:
-            resume_check = inspector(
-                decision.checkpoint, trainer=identity["trainer"], num_epochs=epochs
-            )
+    inspector = checkpoint_inspector or (None if synthetic_test_mode else inspect_checkpoint)
+    if decision.action == "resume" and decision.checkpoint is not None and inspector is not None:
+        resume_check = inspector(
+            decision.checkpoint, trainer=identity["trainer"], num_epochs=epochs
+        )
     manifest = plan_run(run_dir, identity)
     manifest.setdefault("epochs_planned", epochs)
     for key, rel in _COHORT_RECORDS.items():
@@ -403,6 +403,7 @@ def run_training_job(
         "hardware": facts,
         "environment": detect_environment(),  # kaggle / colab / vm (no host names)
     }
+    attempt_start = datetime.now(UTC).timestamp() - 5
     watch = None
     if resume_check and decision.checkpoint is not None and hasattr(runner, "resume_watch"):
         watch = ResumeWatch(
@@ -462,6 +463,23 @@ def run_training_job(
         )
         manifest["checkpoint_path"] = manifest["checkpoint"]["path"] if ckpt else None
         attempt["checkpoint_out"] = manifest["checkpoint"]
+        attempt["session"] = len(manifest["attempts"])
+        attempt["training_log"] = training_log_summary(run_dir, since=attempt_start)
+        out_epoch = None
+        if ckpt is not None and inspector is not None:
+            try:
+                state = inspector(ckpt, trainer=identity["trainer"], num_epochs=epochs)
+                out_epoch = state.get("checkpoint_epoch")
+                attempt["checkpoint_out_inspection"] = state
+            except Exception as exc:  # recorded; the next resume fails closed on it
+                attempt["checkpoint_out_inspection"] = {"passed": False, "error": str(exc)}
+        attempt["lineage"] = lineage(
+            run_dir.name,
+            attempt["session"],
+            attempt["started_at"],
+            manifest["checkpoint"],
+            out_epoch,
+        )
         manifest["artifact_paths"] = _artifacts(run_dir)
         _write_manifest(run_dir, manifest)
 

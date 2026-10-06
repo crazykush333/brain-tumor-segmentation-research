@@ -49,10 +49,10 @@ def inspect_checkpoint(
     num_epochs: int,
     configuration: str = "3d_fullres",
     fold: int = 0,
-    load: Callable[[Path], dict[str, Any]] = _torch_load,
+    load: Callable[[Path], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Verify a checkpoint before resuming from it; returns a weight-free summary."""
-    ck = load(path)
+    ck = (load or _torch_load)(path)
     problems: list[str] = []
     epoch = ck.get("current_epoch")
     if not isinstance(epoch, int) or not 0 < epoch <= num_epochs:

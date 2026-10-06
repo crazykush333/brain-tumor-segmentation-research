@@ -142,8 +142,9 @@ def test_no_numeric_results_in_results_tree(repo_root: Path) -> None:
             # B8 identity and B8-B12 split verification: IDs, counts, hashes; no result values
             text = p.read_text(encoding="utf-8")
             assert "AURC" not in text and "Dice" not in text, rel
-        elif rel.startswith("results/MAIN/runs/") and rel.endswith(
-            ("/run_manifest.json", "/failure_log.json")
+        elif rel.startswith("results/MAIN/runs/") and (
+            rel.endswith(("/run_manifest.json", "/failure_log.json"))
+            or "/sessions/transfer_" in rel
         ):
             # training provenance (identity, attempts, checkpoint hashes): no metric values
             text = p.read_text(encoding="utf-8").lower()

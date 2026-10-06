@@ -87,12 +87,24 @@ def commit_milestone(root: Path, message: str, cfg: Mapping[str, Any]) -> str | 
 def push(root: Path, cfg: Mapping[str, Any], environ: Mapping[str, str]) -> str:
     """Fast-forward push of HEAD to the configured branch. Never forces."""
     remote, branch = str(cfg["remote"]), str(cfg["branch"])
-    args = ["push", remote, f"HEAD:refs/heads/{branch}"]
     token_env = str(cfg.get("token_env") or "")
     env = dict(environ)
+    cred: list[str] = []
     if token_env and environ.get(token_env):
         # helper reads the variable at run time; the value never appears in argv or logs
         helper = f'!f() {{ echo username=x-access-token; echo "password=${{{token_env}}}"; }}; f'
-        args = ["-c", "credential.helper=", "-c", f"credential.helper={helper}", *args]
-    _git(root, *args, env=env)
+        cred = ["-c", "credential.helper=", "-c", f"credential.helper={helper}"]
+    push_args = [*cred, "push", remote, f"HEAD:refs/heads/{branch}"]
+    try:
+        _git(root, *push_args, env=env)
+    except ProvenanceError:
+        # the remote moved on while this session ran (e.g. a code fix was pushed): replay
+        # the local milestone commits on top of it and push again; never a force-push
+        _git(root, *cred, "fetch", remote, branch, env=env)
+        try:
+            _git(root, "rebase", f"{remote}/{branch}")
+        except ProvenanceError:
+            _git(root, "rebase", "--abort", check=False)
+            raise
+        _git(root, *push_args, env=env)
     return _git(root, "rev-parse", "HEAD")

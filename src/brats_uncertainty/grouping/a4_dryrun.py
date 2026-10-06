@@ -104,6 +104,6 @@ def run(repo: Path, crosswalk: Path, ucsf: Path, out_dir: Path) -> dict[str, Any
         ],
     }
     (out_dir / "summary.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
     return report

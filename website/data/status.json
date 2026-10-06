@@ -166,7 +166,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B11",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Split assertions pass"
     },
     {
@@ -345,7 +345,7 @@
       "detail": "split assertions pass",
       "key": "b11",
       "label": "B11 Split assertions",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "split hashes recorded",

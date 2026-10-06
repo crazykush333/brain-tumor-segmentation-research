@@ -1,0 +1,43 @@
+# Proposed gate-B8 procedure, amendment v1.0-A4 (replaces the failed v1.0-A3).
+# STATUS: PRE-SPECIFIED FOR A PRE-SPLIT DRY RUN. Fixed before the dry run; not tuned on it.
+# Image similarity is NOT identity evidence: under A3, verified same-patient pair B scored
+# below 99.9% of metadata-certified different-patient pairs. No anatomy, intensity or
+# WT-Dice value decides identity here.
+amendment: v1.0-A4
+procedure_version: 1
+
+inputs:
+  - "TCIA crosswalk BraTS2021_MappingToTCIA.xlsx (B3 hash): collection, Site ID, real TCIA patient ID"
+  - "UCSF-PDGM-metadata_v5.csv (B4 hash): ID (incl. _FU follow-up records), BraTS21 ID, Sex, IDH"
+  - "protocol verified groups A and B (section 6.1)"
+  - "B7 flagged pairs (frozen T_screen rule): the candidate set for the residual screen"
+
+# Identity keys (deterministic):
+#   UCSF base patient number: from the UCSF-PDGM metadata row whose 'BraTS21 ID' is the
+#   case (ID 'UCSF-PDGM-<n>' or 'UCSF-PDGM-<n>_FU<k>d' -> int(n)), else from the crosswalk
+#   TCIA patient ID of a UCSF-PDGM-collection case (an integer string -> int).
+#   Real TCIA patient ID: the crosswalk value unless blank or the placeholder
+#   'new-not-previously-in-TCIA'; keyed with its TCIA collection.
+
+# SAME_PATIENT linkage over ALL development pairs (identity is identity, flagged or not):
+#   M1 protocol verified group (A, B)
+#   M2 same UCSF base patient number (TCIA follow-up records)
+#   M3 same real TCIA patient ID within the same TCIA collection
+# Residual screen over the B7 flagged pairs not linked by M1-M3, first match wins:
+#   M4 both cases have UCSF base numbers and they differ                -> DIFFERENT_PATIENT
+#   M5 both cases have real TCIA IDs in the same collection, IDs differ -> DIFFERENT_PATIENT
+#   M6 both in UCSF metadata and Sex differs or known IDH class differs -> DIFFERENT_PATIENT
+#   M7 different BraTS contributing Site ID                             -> DIFFERENT_PATIENT
+#      (assumption, stated in the amendment: one patient's scans are contributed by the
+#       institution that acquired them; cross-institution duplicates are not identifiable)
+#   M8 otherwise (no authoritative identity information decides the pair) -> UNRESOLVED
+# Unflagged pairs without M1-M3 linkage are not candidates (frozen section 6.2 screen).
+
+unresolved_handling: linked          # conservative, protocol section 6.2
+
+acceptance:                           # identical limits to v1.0-A3; any failure -> STOP
+  max_group_size: 8
+  verified_groups_intact: true
+  no_site1_in_development: true
+  every_flagged_pair_decided: true
+  metadata_different_never_linked: true   # no M4/M5/M6 pair may end in one group

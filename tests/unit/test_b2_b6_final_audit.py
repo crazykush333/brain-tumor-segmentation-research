@@ -573,7 +573,8 @@ def test_b5_end_to_end_deterministic_manifest(repo_root: Path, tmp_path: Path) -
 
 
 # =========================================================== B6 states
-def test_b6_all_states(repo_root: Path, tmp_path: Path) -> None:
+def test_b6_all_states(pre_execution_root: Path, tmp_path: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     assert {
         "EXPECTED_BY_PROTOCOL",
         "VERIFIED_FROM_SOURCE",

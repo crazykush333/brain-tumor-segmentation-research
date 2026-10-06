@@ -555,6 +555,18 @@ def produce_b8(ctx: Context) -> list[Path]:
     if record.is_file():
         return [record, ctx.repo_root / ctx.cfg["review"]["decisions_file"]]
     decisions_path = _review_file(ctx)
+    if flagged and decisions_path is None and len(flagged) > MAX_RENDERED_REVIEW_PAIRS:
+        package = ctx.work_dir / "review" / "B8"
+        info = _write_b8_package(ctx, flagged, package, render=False)
+        raise StepReview(
+            f"B8: {len(flagged)} flagged pairs exceed what can be reviewed or rendered "
+            f"(> {MAX_RENDERED_REVIEW_PAIRS}); no figure was drawn",
+            "owner decision required before B8 (docs/research/execution/"
+            "B8_MANUAL_REVIEW_REPORT_2026-10-06.md): review as frozen, a logged amendment "
+            "fixed before any split, or stop; the queue and template were written to "
+            f"{package}",
+            package=info,
+        )
     if flagged and decisions_path is None:
         package = ctx.work_dir / "review" / "B8"
         info = _write_b8_package(ctx, flagged, package)
@@ -589,8 +601,13 @@ def produce_b8(ctx: Context) -> list[Path]:
     return out
 
 
+# Above this many flagged pairs the runner never draws review figures automatically (each
+# figure loads eight volumes; tens of thousands would exhaust memory and session time).
+MAX_RENDERED_REVIEW_PAIRS = 2000
+
+
 def _write_b8_package(
-    ctx: Context, flagged: list[tuple[str, str]], package: Path
+    ctx: Context, flagged: list[tuple[str, str]], package: Path, *, render: bool = True
 ) -> dict[str, Any]:
     from brats_uncertainty.data.manifest_doc import load_case_manifest
     from brats_uncertainty.orchestration.review_package import build_review_package
@@ -619,7 +636,12 @@ def _write_b8_package(
 
     text = (ctx.repo_root / "docs/research/FINAL_RESEARCH_PROTOCOL_v1.0.md").read_text("utf-8")
     return build_review_package(
-        package, flagged, meta, text, load_protocol(ctx.repo_root).reviewers, load_case=load_case
+        package,
+        flagged,
+        meta,
+        text,
+        load_protocol(ctx.repo_root).reviewers,
+        load_case=load_case if render else None,
     )
 
 

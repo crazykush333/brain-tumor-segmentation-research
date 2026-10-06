@@ -693,3 +693,32 @@ def test_session_data_restore_fails_closed_when_the_official_files_changed(
     ctx = make_ctx(tmp_path, environ={"BRATS_OFFICIAL_DELIVERY": str(delivery)})
     with pytest.raises(StepFailed, match="re-acquired data differ"):
         execute_session_data(ctx)
+
+
+def test_b8_never_renders_an_unreviewable_number_of_pairs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from brats_uncertainty.orchestration import steps as steps_mod
+    from brats_uncertainty.orchestration.steps import StepReview
+
+    ctx = make_ctx(tmp_path)
+    b7 = ctx.records / "B7"
+    b7.mkdir(parents=True)
+    (b7 / "flagged_pairs.csv").write_text(
+        "case_a,case_b\n" + "".join(f"BraTS2021_0000{i},BraTS2021_0001{i}\n" for i in range(3)),
+        encoding="utf-8",
+    )
+    calls: list[bool] = []
+    import brats_uncertainty.protocol as protocol_mod
+
+    real_load = protocol_mod.load_protocol
+    monkeypatch.setattr(protocol_mod, "load_protocol", lambda root: real_load(REPO_ROOT))
+    monkeypatch.setattr(steps_mod, "MAX_RENDERED_REVIEW_PAIRS", 2)
+    monkeypatch.setattr(
+        steps_mod, "_write_b8_package", lambda c, f, p, render=True: calls.append(render) or {}
+    )
+    with pytest.raises(StepReview) as e:
+        produce_b8(ctx)
+    assert calls == [False]  # queue and template only; no figure is drawn
+    assert "owner decision required" in e.value.action
+    assert not (ctx.records / "B8_review_record.json").exists()  # never passed automatically

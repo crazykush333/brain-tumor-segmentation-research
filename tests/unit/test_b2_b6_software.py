@@ -553,8 +553,9 @@ def test_stamp_contents(repo_root: Path, tmp_path: Path) -> None:
 
 # =========================================================== 9/10/11. B6 expected vs verified
 def test_b6_expected_by_protocol_before_any_source(
-    repo_root: Path, capsys: pytest.CaptureFixture[str]
+    pre_execution_root: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     t = protocol_count_targets()
     assert t["status"] == "EXPECTED_BY_PROTOCOL"
     assert t["targets"] == {"total": 1251, "held_out_institution": 511, "development": 740}
@@ -680,7 +681,8 @@ def test_counts_record_cannot_claim_verified_with_failed_checks() -> None:
 
 
 # =========================================================== 12. B7 locked before B6
-def test_b7_locked_before_b6(repo_root: Path, tmp_path: Path) -> None:
+def test_b7_locked_before_b6(pre_execution_root: Path, tmp_path: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     st = load_status(repo_root)
     assert st.gate("B7").status == "LOCKED"
     assert check_action("compute_t_screen", repo_root)

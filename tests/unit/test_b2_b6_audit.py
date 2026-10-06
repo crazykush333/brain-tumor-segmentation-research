@@ -254,7 +254,10 @@ def test_F_b6_requires_an_actual_source(pre_execution_root: Path, tmp_path: Path
 
 
 # ----- G. expected vs verified
-def test_G_expected_and_verified_states_are_distinct(repo_root: Path, tmp_path: Path) -> None:
+def test_G_expected_and_verified_states_are_distinct(
+    pre_execution_root: Path, tmp_path: Path
+) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot (tests/conftest.py)
     block = build_count_block(repo_root, _raw(repo_root))
     assert block["status"] == "EXPECTED_BY_PROTOCOL"
     assert "counts" not in block

@@ -108,10 +108,12 @@ def test_africa_layout_mismatch_fails_closed(tmp_path: Path) -> None:
 
 # ============================================================ C4
 def test_hoi_screen_and_grouping_are_gated_and_human_reviewed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pre_execution_root: Path
 ) -> None:
     from brats_uncertainty.errors import ResearchGateError
     from brats_uncertainty.study import hoi as hoi_mod
+
+    root = pre_execution_root  # frozen pre-execution snapshot (B9 not passed)
 
     blob = np.zeros((6, 6, 6), bool)
     blob[1:4, 1:4, 1:4] = True
@@ -120,15 +122,13 @@ def test_hoi_screen_and_grouping_are_gated_and_human_reviewed(
     t = tmp_path / "t_screen.json"
     t.write_text('{"value": 0.9}', encoding="utf-8")
     with pytest.raises(ResearchGateError):
-        screen_hoi(REPO_ROOT, masks, t, tmp_path / "c4")  # B9 not passed in the real repository
+        screen_hoi(root, masks, t, tmp_path / "c4")
     monkeypatch.setattr(hoi_mod, "require_action", lambda action, root: None)
-    flagged = screen_hoi(REPO_ROOT, masks, t, tmp_path / "c4")
+    flagged = screen_hoi(root, masks, t, tmp_path / "c4")
     assert flagged == [("BraTS2021_00001", "BraTS2021_00002")]
     rows = [CrosswalkRow(c, "1", "UPENN-GBM", None) for c in masks]
     with pytest.raises(FileNotFoundError):
-        freeze_hoi_groups(
-            REPO_ROOT, rows, flagged, None, ("Ayush Kushwaha", "X"), tmp_path / "g.csv"
-        )
+        freeze_hoi_groups(root, rows, flagged, None, ("Ayush Kushwaha", "X"), tmp_path / "g.csv")
     reviews = tmp_path / "r.csv"
     reviews.write_text(
         "case_a,case_b,decision,reviewer,round,timestamp,reason\n"
@@ -136,9 +136,7 @@ def test_hoi_screen_and_grouping_are_gated_and_human_reviewed(
         "2000-01-01T00:00:00Z,SYNTHETIC\n",
         encoding="utf-8",
     )
-    g = freeze_hoi_groups(
-        REPO_ROOT, rows, flagged, reviews, ("Ayush Kushwaha", "X"), tmp_path / "g.csv"
-    )
+    g = freeze_hoi_groups(root, rows, flagged, reviews, ("Ayush Kushwaha", "X"), tmp_path / "g.csv")
     assert (
         g.case_to_group["BraTS2021_00001"] == g.case_to_group["BraTS2021_00002"]
     )  # UNRESOLVED linked

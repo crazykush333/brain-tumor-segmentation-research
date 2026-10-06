@@ -1,0 +1,104 @@
+{
+  "b8": {
+    "accepted": true,
+    "config_sha256": "ac5ab0bf76ee89518a5f9a44ca5705d3c654ff2e85cd821d1b1d0242f53443ec",
+    "independent_identity_verification": "VERIFIED",
+    "n_development_pool": 740,
+    "n_primary": 497,
+    "n_quarantine": 243,
+    "procedure": "identity_clean_v1.0-A5"
+  },
+  "checks": {
+    "a5_acceptance_passed": true,
+    "a5_cohort_sites_match_b6_site_counts": true,
+    "a5_config_hash": true,
+    "a5_independent_identity_verification": true,
+    "a5_primary_plus_quarantine_equals_b6_development": true,
+    "a5_quarantine_has_no_identity_key": true,
+    "b12_groups_hash_matches_file": true,
+    "b12_partition_id_hashes_match": true,
+    "b12_split_hash_matches_file": true,
+    "b9_covers_exactly_the_primary_cohort": true,
+    "b9_groups_equal_independent_recomputation": true,
+    "no_patient_group_crosses_partitions": true,
+    "no_site1_in_split": true,
+    "split_covers_exactly_development": true,
+    "split_groups_equal_b9_groups": true,
+    "split_partitions_are_train_validation_test": true,
+    "split_seed_20260927": true,
+    "verified_groups_A_B_intact": true
+  },
+  "crossing_groups": [],
+  "passed": true,
+  "patient_groups": {
+    "group_size_counts": {
+      "1": 493,
+      "2": 2
+    },
+    "largest_group": 2,
+    "n_cases": 497,
+    "n_groups": 495
+  },
+  "split": {
+    "case_counts": {
+      "internal_test": 100,
+      "train": 347,
+      "validation": 50
+    },
+    "group_counts": {
+      "internal_test": 99,
+      "train": 346,
+      "validation": 50
+    },
+    "seed": 20260927,
+    "site_counts": {
+      "internal_test": {
+        "10": 2,
+        "11": 3,
+        "12": 1,
+        "13": 8,
+        "14": 1,
+        "15": 2,
+        "16": 8,
+        "18": 55,
+        "20": 7,
+        "5": 6,
+        "6": 3,
+        "7": 1,
+        "8": 2,
+        "9": 1
+      },
+      "train": {
+        "10": 6,
+        "11": 8,
+        "12": 9,
+        "13": 22,
+        "14": 5,
+        "15": 10,
+        "16": 20,
+        "18": 181,
+        "19": 4,
+        "20": 22,
+        "5": 14,
+        "6": 29,
+        "7": 10,
+        "8": 4,
+        "9": 3
+      },
+      "validation": {
+        "11": 3,
+        "12": 1,
+        "13": 5,
+        "15": 1,
+        "16": 2,
+        "18": 27,
+        "20": 4,
+        "5": 2,
+        "6": 2,
+        "7": 1,
+        "8": 2
+      }
+    },
+    "split_all_csv_sha256": "393726596f1f34011d14f3e0e2daf543f09a7ee36501e687a6bddd6cd0d60005"
+  }
+}

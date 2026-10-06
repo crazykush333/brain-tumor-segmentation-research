@@ -243,8 +243,17 @@
     "primary_identity_clean": 497,
     "quarantine": 243,
     "reason": "authoritative identity metadata cover only part of the development pool; image-similarity adjudication (v1.0-A3) and conservative metadata linkage (v1.0-A4) were rejected before any split or training",
-    "sites_absent_from_primary": null,
-    "source": "docs/data/records/B8_A5_identity_sweep.json"
+    "sites_absent_from_primary": [
+      "17",
+      "2",
+      "21",
+      "22",
+      "23",
+      "24",
+      "3",
+      "4"
+    ],
+    "source": "docs/data/records/B8_A5/summary.json"
   },
   "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
   "version": "v1.0"

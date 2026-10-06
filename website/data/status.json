@@ -145,7 +145,7 @@
       "closed_on": null,
       "group": "B",
       "id": "B8",
-      "status": "AUTHORIZED",
+      "status": "RUNNING",
       "title": "Flagged pairs manually reviewed"
     },
     {
@@ -327,7 +327,7 @@
       "detail": "flagged pairs reviewed",
       "key": "b8",
       "label": "B8 Manual review",
-      "status": "AUTHORIZED"
+      "status": "RUNNING"
     },
     {
       "detail": "patient groups frozen (IDs only)",

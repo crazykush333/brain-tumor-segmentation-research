@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Timeline } from "@/components/Gates";
 import { StageOverview } from "@/components/Overview";
 import { Card, Notice, StatusBadge } from "@/components/ui";
-import { demo, repoUrl, results, status } from "@/lib/data";
+import { demo, protocol, repoUrl, results, status } from "@/lib/data";
 
 function H2({ children }: { children: ReactNode }) {
   return <h2 className="mb-3 font-serif text-2xl font-semibold text-slate-900 dark:text-slate-50">{children}</h2>;
@@ -107,7 +107,12 @@ export default function HomePage() {
           <ul className="list-disc space-y-1 pl-5 text-sm">
             <li>Arm A: standard training. Arm B: modality-dropout training (primary).</li>
             <li>C4 = {"{−T1, −T1c, −T2, −FLAIR}"} (primary); Full is a control.</li>
-            <li>Development: 740 BraTS 2021 non-UPenn cases, patient-group split 70/10/20 (seed 20260927).</li>
+            <li>
+              Development: {protocol.population
+                ? `${protocol.population.primary_identity_clean} identity-clean BraTS 2021 non-UPenn cases of a ${protocol.population.development_pool}-case pool (${protocol.population.quarantine} without authoritative identity quarantined; amendment ${protocol.population.amendment})`
+                : "740 BraTS 2021 non-UPenn cases"}
+              , patient-group split 70/10/20 (seed 20260927).
+            </li>
             <li>External: UPenn held-out institution (511) and BraTS-Africa (≤ 95), analysed separately.</li>
             <li>Patient-group bootstrap, 10,000 replicates (seed 12345); Holm within secondary families.</li>
           </ul>

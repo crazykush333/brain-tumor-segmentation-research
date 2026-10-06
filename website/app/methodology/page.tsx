@@ -95,6 +95,25 @@ export default function MethodologyPage() {
         ]}
       />
 
+      {protocol.population && (
+        <>
+          <h2>Study population (amendment {protocol.population.amendment})</h2>
+          <p>{protocol.population.note}</p>
+          <KeyValue
+            rows={[
+              ["Original development pool (site ≠ 1)", String(protocol.population.development_pool)],
+              ["Identity-clean primary cohort", String(protocol.population.primary_identity_clean)],
+              ["Identity-uncertain quarantine cohort", `${protocol.population.quarantine} (excluded from training, validation, thresholds and primary inference)`],
+              ...(protocol.population.sites_absent_from_primary
+                ? [["Sites absent from the primary cohort", protocol.population.sites_absent_from_primary.join(", ") || "none"] as [string, string]]
+                : []),
+              ["Reason", protocol.population.reason],
+              ["Limitation", "reduced, metadata-selected development cohort; possible selection bias"],
+            ]}
+          />
+        </>
+      )}
+
       <h2>Patient grouping and split</h2>
       <KeyValue
         rows={[

@@ -176,7 +176,20 @@ export interface Protocol {
   git_tag: string;
   frozen_on: string;
   amendments: Amendment[];
+  population: Population | null;
   parameters: Params;
+}
+
+/** Amendment v1.0-A5 study population, exported from committed B8 records. */
+export interface Population {
+  amendment: string;
+  note: string;
+  development_pool: number;
+  primary_identity_clean: number;
+  quarantine: number;
+  sites_absent_from_primary: string[] | null;
+  reason: string;
+  source: string;
 }
 
 export const status = statusJson as unknown as Status;

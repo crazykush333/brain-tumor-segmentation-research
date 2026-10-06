@@ -377,11 +377,50 @@ def build_site_data(repo_root: str | Path) -> dict[str, Any]:
             "git_tag": protocol.raw["protocol"]["git_tag"],
             "frozen_on": protocol.raw["protocol"]["frozen_on"],
             "amendments": list_amendments(root),
+            "population": study_population(root),
             "parameters": {k: v for k, v in protocol.raw.items() if k != "protocol"},
         },
         "experiments.json": {"experiments": experiments},
         "results.json": _results(root, raw),
         "demo.json": demo_site_data(root),
+    }
+
+
+POPULATION_NOTE = (
+    "Primary development analyses were restricted to cases with authoritative "
+    "patient-identity metadata. Cases without authoritative identity information were "
+    "quarantined from model development and primary inference to minimize potential "
+    "patient-level leakage."
+)
+
+
+def study_population(root: Path) -> dict[str, Any] | None:
+    """Amendment v1.0-A5 study population, from committed B8 records only (never typed)."""
+    rec = root / "docs/data/records"
+    summary, sweep = rec / "B8_A5" / "summary.json", rec / "B8_A5_identity_sweep.json"
+    if summary.is_file():
+        s = json.loads(summary.read_text(encoding="utf-8"))
+        pool, primary, quarantine = s["n_development_pool"], s["n_primary"], s["n_quarantine"]
+        absent, source = s.get("sites_absent_from_primary"), "B8_A5/summary.json"
+    elif sweep.is_file():
+        s = json.loads(sweep.read_text(encoding="utf-8"))
+        pool, quarantine = s["n_development_pool"], s["n_remaining_unresolved"]
+        primary, absent, source = pool - quarantine, None, "B8_A5_identity_sweep.json"
+    else:
+        return None
+    return {
+        "amendment": "v1.0-A5",
+        "note": POPULATION_NOTE,
+        "development_pool": pool,
+        "primary_identity_clean": primary,
+        "quarantine": quarantine,
+        "sites_absent_from_primary": absent,
+        "reason": (
+            "authoritative identity metadata cover only part of the development pool; "
+            "image-similarity adjudication (v1.0-A3) and conservative metadata linkage "
+            "(v1.0-A4) were rejected before any split or training"
+        ),
+        "source": f"docs/data/records/{source}",
     }
 
 

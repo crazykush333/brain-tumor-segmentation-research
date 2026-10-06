@@ -1,0 +1,15 @@
+{
+  "gate": "B12",
+  "partition_counts": {
+    "internal_test": 100,
+    "train": 347,
+    "validation": 50
+  },
+  "partition_id_list_sha256": {
+    "internal_test": "00b610dfcbd72fa8ca578a2c385757bfe28628db71b2d8c905448324cf3b55ae",
+    "train": "65b1ad6c4683c4211c0f43454d9da1e3206246dbffd975f2ac2f7775a39f48e2",
+    "validation": "f0a8846469d55f22f1694101891972f15e334ccdc6cd8172dd4a3d14aa5adc50"
+  },
+  "patient_groups_dev_csv_sha256": "95613f848190832b7869bd7992ee198a69f516801dc5caa002d6e7e6e590e7d7",
+  "split_all_csv_sha256": "393726596f1f34011d14f3e0e2daf543f09a7ee36501e687a6bddd6cd0d60005"
+}

@@ -30,7 +30,7 @@
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "a41a0256485a28c66023b7f8695c1c30d0299393",
+  "git_commit": "c48c00e5bebfffaee57d63b9ae4fe1a2a0edca18",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -59,19 +59,19 @@
   },
   "steps": {
     "B10": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B10 PASSED: final split"
+      "summary": "gate B10 closed (project status)"
     },
     "B11": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B11 PASSED: split assertions"
+      "summary": "gate B11 closed (project status)"
     },
     "B12": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B12 PASSED: split hashes"
+      "summary": "gate B12 closed (project status)"
     },
     "B2": {
       "attempts": 0,
@@ -104,14 +104,14 @@
       "summary": "gate B7 closed (project status)"
     },
     "B8": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B8 PASSED: manual review record"
+      "summary": "gate B8 closed (project status)"
     },
     "B9": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "B9 PASSED: frozen patient groups"
+      "summary": "gate B9 closed (project status)"
     },
     "C1": {
       "attempts": 1,
@@ -181,7 +181,7 @@
     "ENV": {
       "attempts": 1,
       "status": "PASSED",
-      "summary": "kaggle: GPU none, status NOT_READY"
+      "summary": "kaggle: GPU Tesla T4, status READY_WITH_LIMITS"
     },
     "EXTERNAL_AFRICA": {
       "attempts": 0,
@@ -204,9 +204,9 @@
       "summary": ""
     },
     "PILOT": {
-      "attempts": 0,
+      "attempts": 1,
       "status": "BLOCKED",
-      "summary": "compute environment not ready for JOB-PILOT: no CUDA GPU available (nnU-Net v2 3d_fullres training/inference)"
+      "summary": "EXP-001: the single-GPU timing run (P2) did not complete"
     },
     "STATISTICS": {
       "attempts": 0,

@@ -388,7 +388,8 @@ def test_seeds_and_experiments_keep_separate_manifests(tmp_path: Path) -> None:
     assert seeds == [0, 1, 2]
 
 
-def test_modes_and_gates(tmp_path: Path, repo_root: Path) -> None:
+def test_modes_and_gates(tmp_path: Path, pre_execution_root: Path) -> None:
+    repo_root = pre_execution_root  # frozen pre-execution snapshot: train_main not authorized
     job = load_jobs(repo_root)["JOB-02"]
     with pytest.raises(ResearchGateError):  # real mode: train_main is not authorized now
         run_training_job(

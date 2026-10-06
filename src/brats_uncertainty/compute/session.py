@@ -168,10 +168,24 @@ class DeadlineRunner:
         self.stop_margin_s, self.settle_s, self.poll_s = stop_margin_s, settle_s, poll_s
         self.clock, self.popen = clock, popen
         self.stopped_at_deadline = False
+        # set by compute.jobs for a resumed run: returns False once the log shows the run
+        # did not continue at the checkpoint epoch / learning rate (then it is stopped)
+        self.resume_watch: Callable[[], bool] | None = None
+        self.stopped_by_resume_check = False
 
     def _latest_mtime(self) -> float:
         times = [p.stat().st_mtime for p in self.checkpoint_dir.rglob("checkpoint_latest.pth")]
         return max(times, default=0.0)
+
+    @staticmethod
+    def _stop(proc: Any) -> int:
+        proc.terminate()
+        try:
+            proc.wait(timeout=120)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        return int(proc.returncode if proc.returncode is not None else -15)
 
     def __call__(self, cmd: Sequence[str], env: Mapping[str, str]) -> int:
         proc = self.popen(list(cmd), env={**os.environ, **env})
@@ -181,6 +195,9 @@ class DeadlineRunner:
             code = proc.poll()
             if code is not None:
                 return int(code)
+            if self.resume_watch is not None and not self.resume_watch():
+                self.stopped_by_resume_check = True
+                return self._stop(proc)
             now = self.clock()
             if now >= soft:
                 mtime = self._latest_mtime()
@@ -189,12 +206,6 @@ class DeadlineRunner:
                 fresh = mtime > seen_at_soft and now - mtime >= self.settle_s
                 if fresh or now >= self.deadline:
                     self.stopped_at_deadline = True
-                    proc.terminate()
-                    try:
-                        proc.wait(timeout=120)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
-                        proc.wait()
-                    return int(proc.returncode if proc.returncode is not None else -15)
+                    return self._stop(proc)
             if self.poll_s:
                 time.sleep(self.poll_s)

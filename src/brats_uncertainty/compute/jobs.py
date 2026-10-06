@@ -37,7 +37,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from brats_uncertainty.compute.probe import COMPUTE_CONFIG
+from brats_uncertainty.compute.probe import COMPUTE_CONFIG, detect_environment
 from brats_uncertainty.errors import ProvenanceError
 from brats_uncertainty.evaluation.guards import require_action
 from brats_uncertainty.models.nnunet import (
@@ -59,6 +59,14 @@ TRAINING_CODE = (
     Path("src/brats_uncertainty/models/dropout.py"),
     Path("src/brats_uncertainty/models/nnunet.py"),
 )
+# Study-population records each run is trained under (amendment v1.0-A5), recorded in
+# the manifest for provenance (not part of the run identity).
+_COHORT_RECORDS = {
+    "a5_amendment": Path(
+        "docs/research/protocol-amendments/2026-10-06_B8_A5_identity-clean-cohort.md"
+    ),
+    "a5_cohort": Path("docs/data/records/B8_A5/cohort.csv"),
+}
 MANIFEST_NAME = "run_manifest.json"
 RUN_STATUSES = ("PLANNED", "RUNNING", "COMPLETED", "FAILED", "INVALIDATED")
 IDENTITY_KEYS = (
@@ -320,8 +328,16 @@ def run_training_job(
     synthetic_test_mode: bool = False,
     epochs: int = PROTOCOL_EPOCHS,
     runner: Callable[[Sequence[str], dict[str, str]], int] | None = None,
+    checkpoint_inspector: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Plan, start or (explicitly) resume one protocol training run; fully recorded."""
+    """Plan, start or (explicitly) resume one protocol training run; fully recorded.
+
+    A resume is verified twice (``compute.resume_verification``): the checkpoint before the
+    process starts, and the first resumed epoch and its learning rate in nnU-Net's log while
+    it runs (when the runner supports a ``resume_watch``). Either failure fails closed.
+    """
+    from brats_uncertainty.compute.resume_verification import ResumeWatch, inspect_checkpoint
+
     if synthetic_test_mode:
         if is_within(results_root, repo_root):
             raise ProvenanceError("synthetic test mode writes outside the repository")
@@ -351,7 +367,18 @@ def run_training_job(
     )
     if decision.action == "refuse":
         raise ProvenanceError(f"{job.job_id}: {decision.reason}")
+    resume_check: dict[str, Any] | None = None
+    if decision.action == "resume" and decision.checkpoint is not None:
+        inspector = checkpoint_inspector or (None if synthetic_test_mode else inspect_checkpoint)
+        if inspector is not None:
+            resume_check = inspector(
+                decision.checkpoint, trainer=identity["trainer"], num_epochs=epochs
+            )
     manifest = plan_run(run_dir, identity)
+    manifest.setdefault("epochs_planned", epochs)
+    for key, rel in _COHORT_RECORDS.items():
+        if key not in manifest and (repo_root / rel).is_file():
+            manifest[key] = {"path": rel.as_posix(), "sha256": sha256_file(repo_root / rel)}
     facts = environment_facts()
     attempt: dict[str, Any] = {
         "started_at": _now(),
@@ -360,10 +387,30 @@ def run_training_job(
         "resumed_from": (
             decision.checkpoint.relative_to(run_dir).as_posix() if decision.checkpoint else None
         ),
+        "resumed_from_checkpoint": (
+            {
+                "path": decision.checkpoint.relative_to(run_dir).as_posix(),
+                "sha256": sha256_file(decision.checkpoint),
+                "epoch": (resume_check or {}).get("checkpoint_epoch"),
+            }
+            if decision.checkpoint
+            else None
+        ),
+        "resume_verification": {"checkpoint": resume_check} if resume_check else None,
         "git_commit": commit,
         "environment_hash": environment_hash(facts),
         "hardware": facts,
+        "environment": detect_environment(),  # kaggle / colab / vm (no host names)
     }
+    watch = None
+    if resume_check and decision.checkpoint is not None and hasattr(runner, "resume_watch"):
+        watch = ResumeWatch(
+            decision.checkpoint.parent,
+            epoch=int(resume_check["checkpoint_epoch"]),
+            num_epochs=epochs,
+            since=datetime.now(UTC).timestamp() - 5,
+        )
+        runner.resume_watch = watch  # type: ignore[union-attr]
     cmd = train_command(
         dataset_id, run, resume=decision.action == "resume", trainer=identity["trainer"]
     )
@@ -386,8 +433,24 @@ def run_training_job(
         final = find_checkpoint(run_dir, "checkpoint_final.pth")
         latest = find_checkpoint(run_dir, "checkpoint_latest.pth")
         attempt.update(ended_at=_now(), exit_code=code)
+        attempt["gpu_hours"] = round(
+            (
+                datetime.fromisoformat(attempt["ended_at"])
+                - datetime.fromisoformat(attempt["started_at"])
+            ).total_seconds()
+            / 3600,
+            4,
+        )  # one GPU per run (EXP-001: no concurrency)
+        manifest["gpu_hours_total"] = round(
+            sum(float(a.get("gpu_hours") or 0) for a in manifest["attempts"]), 4
+        )
         manifest["end_time"] = attempt["ended_at"]
         manifest["status"] = "COMPLETED" if code == 0 and final else "FAILED"
+        if watch is not None:
+            attempt["resume_verification"]["log"] = watch.result
+            if watch.result is not None and not watch.result["passed"]:
+                manifest["status"] = "FAILED"
+                attempt["resume_verification_failed"] = True
         ckpt = final or latest
         manifest["checkpoint"] = (
             {"path": ckpt.relative_to(run_dir).as_posix(), "sha256": sha256_file(ckpt)}
@@ -395,6 +458,7 @@ def run_training_job(
             else None
         )
         manifest["checkpoint_path"] = manifest["checkpoint"]["path"] if ckpt else None
+        attempt["checkpoint_out"] = manifest["checkpoint"]
         manifest["artifact_paths"] = _artifacts(run_dir)
         _write_manifest(run_dir, manifest)
 
@@ -404,4 +468,9 @@ def run_training_job(
         _finish(None)
         raise
     _finish(code)
+    if attempt.get("resume_verification_failed"):
+        raise ProvenanceError(
+            f"{job.job_id}: the resumed run did not continue at the checkpoint epoch / "
+            f"learning rate ({watch.result if watch else None}); stopped (fail closed)"
+        )
     return manifest

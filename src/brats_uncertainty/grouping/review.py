@@ -106,5 +106,28 @@ def resolve_reviews(
     return final
 
 
+def read_automated_decisions(
+    path: str | Path, flagged: Sequence[tuple[str, str]]
+) -> dict[tuple[str, str], str]:
+    """Amendment v1.0-A3 decisions: exactly one valid decision per flagged pair."""
+    with Path(path).open(encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    final: dict[tuple[str, str], str] = {}
+    for r in rows:
+        k = pair_key(r["case_a"], r["case_b"])
+        if r["decision"] not in DECISIONS:
+            raise DataValidationError(f"invalid automated decision {r['decision']!r} for {k}")
+        if k in final:
+            raise DataValidationError(f"duplicate automated decision for {k}")
+        final[k] = r["decision"]
+    flagged_keys = {pair_key(a, b) for a, b in flagged}
+    if set(final) != flagged_keys:
+        raise ProtocolDeviationError(
+            "automated decisions do not cover exactly the flagged pairs "
+            f"({len(set(final) - flagged_keys)} extra, {len(flagged_keys - set(final))} missing)"
+        )
+    return final
+
+
 def linked_pairs(decisions: Mapping[tuple[str, str], str]) -> list[tuple[str, str]]:
     return sorted(k for k, d in decisions.items() if d in LINKED_DECISIONS)

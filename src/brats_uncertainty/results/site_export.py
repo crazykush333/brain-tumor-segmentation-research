@@ -199,7 +199,12 @@ def list_amendments(repo_root: Path) -> list[dict[str, str]]:
                 "file": (AMENDMENTS_DIR / p.name).as_posix(),
             }
         )
-    return out
+
+    def order(a: dict[str, str]) -> tuple[str, int, str]:
+        m = re.search(r"-A(\d+)$", a["id"])
+        return (a["date"], int(m.group(1)) if m else 0, a["id"])
+
+    return sorted(out, key=order)
 
 
 def build_overview(

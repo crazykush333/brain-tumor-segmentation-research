@@ -127,16 +127,28 @@ def stage_freeze_groups(
     repo_root: Path,
     development: list[CrosswalkRow],
     flagged_csv: Path,
-    reviews_csv: Path,
+    reviews_csv: Path | None,
     out_dir: Path,
     prefix: str = "DEV",
+    *,
+    automated_decisions: Path | None = None,
 ) -> PatientGrouping:
-    """Gate B9: transitive grouping from verified groups, shared TCIA IDs and reviews."""
+    """Gate B9: transitive grouping from verified groups, shared TCIA IDs and B8 decisions.
+
+    B8 decisions come from the reviewers' CSV (section 6.2) or, under amendment v1.0-A3,
+    from the automated adjudication record (``automated_decisions``).
+    """
     require_action("freeze_patient_groups", repo_root)
     spec = load_protocol(repo_root)
     with flagged_csv.open(encoding="utf-8", newline="") as fh:
         flagged = [(r["case_a"], r["case_b"]) for r in csv.DictReader(fh)]
-    decisions = resolve_reviews(flagged, read_reviews(reviews_csv), spec.reviewers)
+    if automated_decisions is not None:
+        from brats_uncertainty.grouping.review import read_automated_decisions
+
+        decisions = read_automated_decisions(automated_decisions, flagged)
+    else:
+        assert reviews_csv is not None
+        decisions = resolve_reviews(flagged, read_reviews(reviews_csv), spec.reviewers)
     grouping = build_groups(
         [r.case_id for r in development],
         prefix=prefix,

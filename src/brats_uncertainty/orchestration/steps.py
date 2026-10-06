@@ -545,6 +545,134 @@ def _review_file(ctx: Context) -> Path | None:
     return committed if committed.is_file() else None
 
 
+AUTOMATED_B8_MODE = "automated_v1.0-A3"
+B8_AUTO_DECISIONS = "B8_automated_decisions.csv"
+B8_AUTO_AUDIT = "B8_automated_audit.json"
+B8_AMENDMENT = "docs/research/protocol-amendments/2026-10-06_B8_automated-adjudication.md"
+
+
+def b8_automated(ctx: Context) -> bool:
+    return bool(ctx.cfg["review"].get("mode") == AUTOMATED_B8_MODE)
+
+
+def b8_metadata(ctx: Context) -> dict[str, Any]:
+    """Permitted pre-split metadata per case (crosswalk + UCSF-PDGM Sex/IDH)."""
+    from brats_uncertainty.data.crosswalk import read_table_records
+    from brats_uncertainty.grouping.auto_b8 import CaseMeta, idh_class, real_tcia_id
+
+    ucsf = {
+        str(r.get("BraTS21 ID") or "").strip(): r
+        for r in read_table_records(ctx.metadata_path("B4"))
+        if str(r.get("BraTS21 ID") or "").strip()
+    }
+    out: dict[str, Any] = {}
+    for r in crosswalk_rows(ctx):
+        u = ucsf.get(r.case_id)
+        out[r.case_id] = CaseMeta(
+            collection=r.collection,
+            site=r.site_id,
+            tcia_id=real_tcia_id(r.tcia_subject_id),
+            sex=(str(u.get("Sex") or "").strip() or None) if u else None,
+            idh=idh_class(str(u.get("IDH") or "")) if u else None,
+        )
+    return out
+
+
+def produce_b8_automated(ctx: Context, flagged: list[tuple[str, str]]) -> list[Path]:
+    """Amendment v1.0-A3: deterministic adjudication; stops if acceptance fails."""
+    import os
+    from concurrent.futures import ThreadPoolExecutor
+
+    import numpy as np
+
+    from brats_uncertainty.data.manifest_doc import load_case_manifest
+    from brats_uncertainty.grouping import auto_b8 as ab
+    from brats_uncertainty.pipeline import load_label
+    from brats_uncertainty.protocol import load_protocol
+    from brats_uncertainty.utils.git import git_commit
+
+    spec = load_protocol(ctx.repo_root)
+    cfg = ab.AutoB8Config.load(ctx.repo_root / ab.CONFIG_RELPATH)
+    development = sorted(r.case_id for r in development_rows(ctx))
+    meta = b8_metadata(ctx)
+    manifest = {e.case_id: e for e in load_case_manifest(ctx.records / "B5_manifest.json").entries}
+    root = ctx.training_root()
+
+    def build(cid: str) -> Any:
+        import nibabel as nib
+
+        e = manifest[cid]
+        assert e.label is not None
+        images = {
+            m: np.asarray(nib.load(str(root / f.relpath)).dataobj)  # type: ignore[attr-defined]
+            for m, f in e.images.items()
+        }
+        return ab.case_descriptor(images, load_label(root / e.label.relpath), cfg)
+
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 2) as ex:
+        descriptors = dict(zip(development, ex.map(build, development), strict=True))
+    adj = ab.adjudicate(
+        flagged, development, meta, spec.verified_groups, descriptors.__getitem__, cfg
+    )
+    decisions_csv = ctx.records / B8_AUTO_DECISIONS
+    with decisions_csv.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=ab.DECISION_FIELDS, lineterminator="\n")
+        w.writeheader()
+        for (a, b), v in sorted(adj.decisions.items()):
+            w.writerow({"case_a": a, "case_b": b, **v})
+    audit = ctx.records / B8_AUTO_AUDIT
+    write_json(
+        audit,
+        {
+            "gate": "B8",
+            "procedure": AUTOMATED_B8_MODE,
+            "amendment": B8_AMENDMENT,
+            "config": ab.CONFIG_RELPATH.as_posix(),
+            "config_sha256": cfg.sha256,
+            "code_commit": git_commit(ctx.repo_root),
+            "inputs": [
+                "four MRI sequences (T1, T1c, T2, FLAIR) of the development cases",
+                "ground-truth WT labels (lesion exclusion only)",
+                "TCIA crosswalk: collection, site, real TCIA patient ID",
+                "UCSF-PDGM metadata: Sex, IDH class",
+                "B7 flagged pairs (frozen T_screen rule)",
+            ],
+            "not_used": [
+                "model predictions",
+                "segmentation performance",
+                "split, validation, test or calibration results",
+                "any post-split information",
+            ],
+            "t_screen_record": "docs/data/records/B7/t_screen.json",
+            **ab.summary(adj, len(development)),
+            "recorded_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        },
+        overwrite=True,
+    )
+    if not adj.accepted:
+        failed = sorted(k for k, ok in adj.acceptance.items() if not ok)
+        raise StepReview(
+            f"B8 automated adjudication failed its pre-specified acceptance criteria: {failed}",
+            f"STOP (amendment v1.0-A3): no rule is adjusted; inspect {ctx.rel(audit)} "
+            "and decide how to proceed (owner)",
+            failed=failed,
+        )
+    record = ctx.records / "B8_review_record.json"
+    write_json(
+        record,
+        {
+            "gate": "B8",
+            "procedure": AUTOMATED_B8_MODE,
+            "amendment": B8_AMENDMENT,
+            "n_flagged": len(flagged),
+            "decisions_file": ctx.rel(decisions_csv),
+            "audit": ctx.rel(audit),
+            "recorded_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        },
+    )
+    return [record, decisions_csv, audit]
+
+
 def produce_b8(ctx: Context) -> list[Path]:
     from brats_uncertainty.grouping.review import read_reviews, resolve_reviews
     from brats_uncertainty.protocol import load_protocol
@@ -553,7 +681,11 @@ def produce_b8(ctx: Context) -> list[Path]:
     flagged = flagged_pairs(ctx)
     record = ctx.records / "B8_review_record.json"
     if record.is_file():
+        if b8_automated(ctx):
+            return [record, ctx.records / B8_AUTO_DECISIONS, ctx.records / B8_AUTO_AUDIT]
         return [record, ctx.repo_root / ctx.cfg["review"]["decisions_file"]]
+    if b8_automated(ctx):
+        return produce_b8_automated(ctx, flagged)
     decisions_path = _review_file(ctx)
     if flagged and decisions_path is None and len(flagged) > MAX_RENDERED_REVIEW_PAIRS:
         package = ctx.work_dir / "review" / "B8"
@@ -651,6 +783,16 @@ def produce_b9(ctx: Context) -> list[Path]:
     out = ctx.splits / "patient_groups_dev.csv"
     audit = ctx.splits / "grouping_audit_dev.json"
     if out.is_file():
+        return [out, audit]
+    if b8_automated(ctx):
+        stage_freeze_groups(
+            ctx.repo_root,
+            development_rows(ctx),
+            _b7_dir(ctx) / "flagged_pairs.csv",
+            None,
+            ctx.splits,
+            automated_decisions=ctx.records / B8_AUTO_DECISIONS,
+        )
         return [out, audit]
     reviews = ctx.repo_root / ctx.cfg["review"]["decisions_file"]
     if not reviews.is_file():  # zero flagged pairs: an empty, valid review file

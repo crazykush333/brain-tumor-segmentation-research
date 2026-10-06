@@ -326,6 +326,7 @@ def test_recorded_receive_command_is_evidenced_and_keeps_secrets_out(repo_root: 
 # ============================================================ B8: human review only
 def test_b8_requires_human_decisions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = make_ctx(tmp_path)
+    ctx.cfg["review"]["mode"] = "manual"  # the original section 6.2 procedure
     b7 = ctx.records / "B7"
     b7.mkdir(parents=True)
     (b7 / "flagged_pairs.csv").write_text(
@@ -702,6 +703,7 @@ def test_b8_never_renders_an_unreviewable_number_of_pairs(
     from brats_uncertainty.orchestration.steps import StepReview
 
     ctx = make_ctx(tmp_path)
+    ctx.cfg["review"]["mode"] = "manual"  # the original section 6.2 procedure
     b7 = ctx.records / "B7"
     b7.mkdir(parents=True)
     (b7 / "flagged_pairs.csv").write_text(

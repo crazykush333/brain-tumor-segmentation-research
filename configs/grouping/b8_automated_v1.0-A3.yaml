@@ -1,0 +1,53 @@
+# Automated gate-B8 adjudication (protocol v1.0 amendment v1.0-A3).
+# Every value below is fixed BEFORE the procedure is run on any study data. None was chosen
+# from the flagged-pair distribution, the split, any model output or any scientific result.
+# The file's SHA-256 is recorded in the amendment and in the B8 audit record.
+amendment: v1.0-A3
+procedure_version: 1
+
+# Inputs (protocol section 6.2 "permitted inputs" only)
+modalities: [T1, T1c, T2, FLAIR]      # the four MRI sequences (BraTS SRI24, 1 mm, skull-stripped)
+label_region_excluded: WT             # ground-truth WT label: excluded from the anatomy comparison
+exclusion_dilation_voxels: 3          # Euclidean ball, as REPRODUCIBILITY.md item 1
+
+# Per-case anatomy descriptor
+brain_mask: all_modalities_nonzero    # voxels > 0 in all four sequences
+intensity_standardization: zscore_within_brain
+block_size_voxels: 4                  # mean over 4x4x4 blocks (volume padded with zeros to a multiple of 4)
+block_min_valid_fraction: 0.5         # a block counts only if >= 50% of its voxels are valid
+
+# Pair feature: S = mean over the four sequences of the Pearson correlation of the block
+# values over blocks valid in both cases (non-tumour brain anatomy).
+coverage_min: 0.5                     # valid shared blocks / min(brain blocks of the two cases)
+min_shared_blocks: 100
+
+# Negative reference: pairs certified DIFFERENT PATIENT by metadata (rules R3/R4) among ALL
+# development pairs (flagged or not), deterministic sample.
+reference_negatives:
+  max_pairs: 20000
+  sampling_seed: 20261006             # date of the amendment; fixed before any computation
+  quantile: 0.999                     # tau_neg = this quantile of S (numpy method "higher")
+
+# Positive reference: the two verified same-patient pairs (protocol section 6.2).
+# tau_ctrl = min(S_A, S_B).
+
+# Decision categories: SAME_PATIENT / DIFFERENT_PATIENT / UNRESOLVED.
+# Rules, first match wins:
+#   R1 pair inside a verified group (A or B)                         -> SAME_PATIENT
+#   R2 both cases carry the same real TCIA patient ID                 -> SAME_PATIENT
+#   R3 both real TCIA patient IDs, same TCIA collection, IDs differ   -> DIFFERENT_PATIENT
+#   R4 both in UCSF-PDGM metadata and Sex differs, or IDH class
+#      (wildtype / mutant; unknown never decides) differs              -> DIFFERENT_PATIENT
+#   R5 coverage < coverage_min or shared blocks < min_shared_blocks   -> UNRESOLVED
+#   R6 S >= tau_ctrl                                                   -> SAME_PATIENT
+#   R7 tau_neg < S < tau_ctrl                                          -> UNRESOLVED
+#   R8 S <= tau_neg                                                    -> DIFFERENT_PATIENT
+# SAME_PATIENT and UNRESOLVED are linked for grouping (conservative, protocol section 6.2).
+
+# Acceptance criteria. If any fails, B8 stops; nothing is passed or adjusted.
+acceptance:
+  controls_above_tau_neg: true        # both verified pairs must be more similar than tau_neg
+  controls_min_coverage: true         # and have coverage >= coverage_min
+  max_group_size: 8                   # no patient group larger than 8 cases
+  no_site1_in_development: true
+  verified_groups_intact: true

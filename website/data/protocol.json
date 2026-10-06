@@ -13,6 +13,13 @@
       "id": "v1.0-A2",
       "title": "Protocol v1.0 amendment A2: BraTS-Africa operational data route",
       "type": "DATA-ROUTE / OPERATIONAL"
+    },
+    {
+      "date": "2026-10-06",
+      "file": "docs/research/protocol-amendments/2026-10-06_B8_automated-adjudication.md",
+      "id": "v1.0-A3",
+      "title": "Protocol v1.0 amendment A3: automated, deterministic adjudication at gate B8",
+      "type": "METHOD / FEASIBILITY"
     }
   ],
   "frozen_on": "2026-09-28",

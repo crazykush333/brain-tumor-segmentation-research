@@ -43,8 +43,11 @@ acquisition:                          # gate B2, approved route only (amendment 
       gate: B4
       source_url: "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/"
 
-review:                               # gate B8: human review by the two protocol reviewers
-  decisions_file: docs/data/records/B8_reviews.csv
+review:                               # gate B8 (protocol section 6.2)
+  # Amendment v1.0-A3 (2026-10-06): the 49,468 flagged pairs are adjudicated by the
+  # pre-specified automated procedure (configs/grouping/b8_automated_v1.0-A3.yaml).
+  mode: automated_v1.0-A3
+  decisions_file: docs/data/records/B8_reviews.csv   # manual mode only
   decisions_env: BRATS_B8_REVIEWS
 
 training:

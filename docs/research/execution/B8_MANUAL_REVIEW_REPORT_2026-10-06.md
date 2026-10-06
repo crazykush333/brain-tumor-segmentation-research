@@ -1,5 +1,7 @@
 # Gate B8: manual-review report (protocol §6.2), 2026-10-06
 
+> **Owner decision (2026-10-06):** the logged-amendment route. Amendment v1.0-A3 (`docs/research/protocol-amendments/2026-10-06_B8_automated-adjudication.md`) replaces exhaustive manual review with a pre-specified, deterministic procedure.
+
 **Status: B8 RUNNING. No pair has been reviewed and nothing has been decided.**
 
 Decisions are made only by the named reviewers:

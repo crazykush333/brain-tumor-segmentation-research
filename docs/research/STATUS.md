@@ -6,7 +6,7 @@ are generated from it).
 
 | Item | Status | Detail |
 |---|---|---|
-| Research protocol | ✅ Frozen | v1.0, 2026-09-28, SHA-256 `704c0b49…6fcd9811`; two logged amendments (v1.0-A1 and v1.0-A2, data routes, no scientific change) |
+| Research protocol | ✅ Frozen | v1.0, 2026-09-28, SHA-256 `704c0b49…6fcd9811`; three logged amendments (v1.0-A1, v1.0-A2 data routes; v1.0-A3 automated B8 adjudication; no endpoint change) |
 | Repository | ✅ Public reproducible release | clean release snapshot; development history archived ([ARCHIVAL_PROVENANCE.md](ARCHIVAL_PROVENANCE.md)) |
 | Tests | ✅ Passing | synthetic fixtures only; verified locally before release (pytest, ruff, mypy, package and website builds); CI runs on `main` |
 | Execution engine | ✅ Implemented | `brats-uncertainty master-run`: gated steps B2 → final audit, resume, provenance, safe export |

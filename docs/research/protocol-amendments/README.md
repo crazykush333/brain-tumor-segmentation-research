@@ -1,6 +1,6 @@
 # Protocol amendments and administrative entries
 
-**Protocol v1.0 has two logged amendments: v1.0-A1 and v1.0-A2.** The frozen v1.0 text and the `protocol-v1.0` tag are unchanged.
+**Protocol v1.0 has three logged amendments: v1.0-A1, v1.0-A2 and v1.0-A3.** The frozen v1.0 text and the `protocol-v1.0` tag are unchanged.
 
 **v1.0-A1 — 2026-10-01 — DATA-ROUTE / OPERATIONAL.** Owner-approved direct official TCIA access into a private, access-restricted computational environment.
 
@@ -12,6 +12,8 @@
 - Not authorized: third-party re-hosting, Kaggle mirroring and public redistribution.
 
 **v1.0-A2 — 2026-10-06 — DATA-ROUTE / OPERATIONAL.** Owner-approved official TCIA BraTS-Africa download (DOI 10.7937/v8h6-8x67, processed release CC BY 4.0) into a private, access-restricted computational environment (gate C1). External evaluation only; scientific and methodological impact: none.
+
+**v1.0-A3 — 2026-10-06 — METHOD / FEASIBILITY.** Gate B8: the 49,468 pairs flagged by the frozen T_screen rule are adjudicated by a pre-specified deterministic procedure (non-tumour anatomy of the four MRI sequences, crosswalk and UCSF-PDGM metadata) instead of exhaustive manual review. Made after the flagged count was known (disclosed); T_screen, categories and conservative linking unchanged; no endpoint change.
 
 Rules (protocol v1.0, "Freeze rule" and §25):
 
@@ -25,3 +27,4 @@ Rules (protocol v1.0, "Freeze rule" and §25):
 | 2026-10-01 | Amendment v1.0-A1 (DATA-ROUTE / OPERATIONAL) | B1; §5.1 operational data route; SR7 | [2026-10-01_B1_data-route.md](2026-10-01_B1_data-route.md) | No |
 | 2026-10-01 | Administrative entry (OPERATIONAL; no design change) | Remote compute environment for the B1 route; §17, §24; SR8 | [2026-10-01_compute-environment.md](2026-10-01_compute-environment.md) | No |
 | 2026-10-06 | Amendment v1.0-A2 (DATA-ROUTE / OPERATIONAL) | C1; §5 BraTS-Africa operational data route; SR7 | [2026-10-06_C1_brats-africa-route.md](2026-10-06_C1_brats-africa-route.md) | No |
+| 2026-10-06 | Amendment v1.0-A3 (METHOD / FEASIBILITY) | B8; §6.2 steps 4–5 | [2026-10-06_B8_automated-adjudication.md](2026-10-06_B8_automated-adjudication.md) | No |

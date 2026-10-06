@@ -101,8 +101,8 @@ gates:
   - {id: B8, title: "Flagged pairs manually reviewed", status: PASSED, evidence: "docs/data/records/B8_review_record.json", closed_on: "2026-10-06"}
   - {id: B9, title: "Patient groups frozen and committed (IDs only)", status: PASSED, evidence: "splits/patient_groups_dev.csv", closed_on: "2026-10-06"}
   - {id: B10, title: "Final split created once", status: PASSED, evidence: "splits/split_all.csv", closed_on: "2026-10-06"}
-  - {id: B11, title: "Split assertions pass", status: RUNNING, evidence: null, closed_on: null}
-  - {id: B12, title: "Split hashes recorded", status: LOCKED, evidence: null, closed_on: null}
+  - {id: B11, title: "Split assertions pass", status: PASSED, evidence: "splits/split_summary.json", closed_on: "2026-10-06"}
+  - {id: B12, title: "Split hashes recorded", status: AUTHORIZED, evidence: null, closed_on: null}
   # --- C: pre-external-evaluation gates -----------------------------------------
   - {id: C1, title: "BraTS-Africa file-level label verification", status: NOT_STARTED, evidence: null, closed_on: null}
   - {id: C2, title: "BraTS-Africa four-sequence verification", status: NOT_STARTED, evidence: null, closed_on: null}

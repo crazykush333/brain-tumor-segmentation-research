@@ -24,13 +24,13 @@
     "C6": "NOT_STARTED",
     "D1": "CLOSED",
     "D2": "CLOSED",
-    "D3": "NOT_STARTED",
-    "D4": "NOT_STARTED",
-    "D5": "NOT_STARTED",
+    "D3": "CLOSED",
+    "D4": "CLOSED",
+    "D5": "CLOSED",
     "D6": "NOT_STARTED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "c48c00e5bebfffaee57d63b9ae4fe1a2a0edca18",
+  "git_commit": "048744ae3b992937800d68200009115ecf8d9142",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -154,24 +154,24 @@
       "summary": "gate D2 closed (project status)"
     },
     "D3": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "D3 CLOSED: pilot restricted to site != 1 development cases"
     },
     "D4": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "D4 CLOSED: no label-based scientific metrics"
     },
     "D5": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "PASSED",
+      "summary": "D5 CLOSED: no site-1 or BraTS-Africa data"
     },
     "D6": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "REVIEW_REQUIRED",
+      "summary": "D6: EXP-001 acceptance needs the owner: ['resume check did not pass', 'p100_epoch_time_s: not measurable on this platform', 'concurrent_2gpu_epoch_time_s: not measurable on this platform', 'quota_h_week: not measurable on this platform', 'session_limit_h: not measurable on this platform', \"SR1/SR6 reached 'consult the owner'\"]"
     },
     "DATA": {
       "attempts": 1,
@@ -205,8 +205,8 @@
     },
     "PILOT": {
       "attempts": 1,
-      "status": "BLOCKED",
-      "summary": "EXP-001: the single-GPU timing run (P2) did not complete"
+      "status": "PASSED",
+      "summary": "EXP-001 measurements recorded"
     },
     "STATISTICS": {
       "attempts": 0,

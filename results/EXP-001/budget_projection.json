@@ -1,0 +1,47 @@
+{
+  "acceptance_failures": [
+    "resume check did not pass"
+  ],
+  "calendar_weeks": null,
+  "cap_gpu_h": 220.0,
+  "count_convention": "ensemble passes per member; 3 members loaded together (spec §3)",
+  "final": {
+    "concurrency_applied": false,
+    "plan": {
+      "arm_a_external_conditions": 5,
+      "c15": true,
+      "epochs": 250
+    },
+    "t_infer_c15": 1.401,
+    "t_infer_prim": 7.836,
+    "t_total": 125.708,
+    "t_train_run": 19.412,
+    "t_train_total": 116.471
+  },
+  "not_measurable_on_platform": [
+    "p100_epoch_time_s",
+    "concurrent_2gpu_epoch_time_s",
+    "quota_h_week",
+    "session_limit_h"
+  ],
+  "sr1_applied": false,
+  "sr6_steps_applied": [],
+  "sr8_events": [],
+  "status": "OWNER_CONSULTATION",
+  "steps": [
+    {
+      "concurrency_applied": false,
+      "plan": {
+        "arm_a_external_conditions": 5,
+        "c15": true,
+        "epochs": 250
+      },
+      "step": "baseline",
+      "t_infer_c15": 1.401,
+      "t_infer_prim": 7.836,
+      "t_total": 125.708,
+      "t_train_run": 19.412,
+      "t_train_total": 116.471
+    }
+  ]
+}

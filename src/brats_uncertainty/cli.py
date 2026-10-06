@@ -314,6 +314,21 @@ def _cmd_build_nnunet_dataset(root: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_audit_split(root: Path, args: argparse.Namespace) -> int:
+    import json as _json
+
+    from brats_uncertainty.verification.split_audit import audit
+
+    result = audit(root)
+    out = root / args.out
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(_json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    for k, ok in result["checks"].items():
+        print(f"{'PASS' if ok else 'FAIL'}  {k}")
+    print("B8-B12 split audit:", "PASSED" if result["passed"] else "FAILED")
+    return 0 if result["passed"] else 1
+
+
 def _cmd_verify_inventory(root: Path, args: argparse.Namespace) -> int:
     from brats_uncertainty.data.records import read_acquisition_record, verify_inventory
 
@@ -624,6 +639,11 @@ def build_parser() -> argparse.ArgumentParser:
     vm = sub.add_parser("validate-metrics", help="validate *.metrics.json result files")
     vm.add_argument("files", nargs="+")
     vm.set_defaults(func=_cmd_validate_metrics)
+    au = sub.add_parser(
+        "audit-split", help="independent B8-B12 leakage/provenance audit (committed IDs only)"
+    )
+    au.add_argument("--out", default="docs/research/execution/B8_B12_SUMMARY.json")
+    au.set_defaults(func=_cmd_audit_split)
     vi = sub.add_parser(
         "verify-inventory", help="check a (re-)acquired tree against the committed B2 inventory"
     )

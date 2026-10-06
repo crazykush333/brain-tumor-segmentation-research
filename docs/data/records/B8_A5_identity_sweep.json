@@ -1,0 +1,48 @@
+{
+  "checked_by_collection": {
+    "Collection 4": 30,
+    "Collection 5": 47,
+    "Collection 7": 4,
+    "Collection 9": 1,
+    "Collection1": 35,
+    "Collection3": 7,
+    "UCSF-PDGM_Additional": 119
+  },
+  "config": "configs/grouping/b8_identity_clean_v1.0-A5.yaml",
+  "config_sha256": "ac5ab0bf76ee89518a5f9a44ca5705d3c654ff2e85cd821d1b1d0242f53443ec",
+  "n_checked_without_identity": 243,
+  "n_development_pool": 740,
+  "n_newly_resolved": 0,
+  "n_remaining_unresolved": 243,
+  "newly_resolved": [],
+  "procedure": "A5 final metadata identity-recovery sweep",
+  "remaining_unresolved_ids_sha256": "244cf2928c45b82b0cc8558708999483d9c9547d1fb57c8b28a8cd0bbb1545dc",
+  "reproducible_with": "brats-uncertainty a5-identity-sweep (inputs verified by hash)",
+  "sources": {
+    "crosswalk": {
+      "file": "BraTS2021_MappingToTCIA.xlsx",
+      "record": "B3",
+      "sha256": "223243c5821c282e90da980ba38d860ab2d2a597d1f4f1800ebe227329a2dc0b"
+    },
+    "gc_sources_manifest": {
+      "columns": "File ID,TCIA Series Instance UID",
+      "file": "GC_manifest_RSNA-ASNR-MICCAI-BRATS-2021_sources.csv",
+      "mentions_any_brats_case_id": false,
+      "sha256": "50e54e3a184f36b57750ca9873c684502105aef1ff7b52841f5706c7a0c50aa2",
+      "url": "https://www.cancerimagingarchive.net/wp-content/uploads/GC_manifest_RSNA-ASNR-MICCAI-BRATS-2021_sources.csv"
+    },
+    "not_previously_in_tcia": {
+      "file": "NotPreviouslyInTCIA.csv",
+      "lines": 1967,
+      "sha256": "363d410cd3db19f41896dfd7ae6a4c2e74b70b5a00195b4634d620fc4e9f9010",
+      "url": "https://www.cancerimagingarchive.net/wp-content/uploads/NotPreviouslyInTCIA.csv"
+    },
+    "ucsf_follow_up_notice": "https://www.cancerimagingarchive.net/collection/ucsf-pdgm/ (page updated 2025/05/30)",
+    "ucsf_metadata": {
+      "file": "UCSF-PDGM-metadata_v5.csv",
+      "record": "B4",
+      "sha256": "afc1c23a0eb0597b56e603741e72f2308b4860281187cd3808e05b7a0116fd78"
+    }
+  },
+  "unresolved_listed_as_not_previously_in_tcia": 243
+}

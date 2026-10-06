@@ -157,7 +157,8 @@ def _a5_fixture(root: Path, *, quarantine_in_split: bool = False) -> Path:
         encoding="utf-8",
     )
     (rec / "B6.json").write_text(
-        json.dumps({"development_ids_sha256": _ids([*key, Q])}), encoding="utf-8"
+        json.dumps({"development_ids_sha256": _ids([*key, Q]), "site_counts": {"1": 3, "18": 7}}),
+        encoding="utf-8",
     )
     if quarantine_in_split:
         with (root / "splits/patient_groups_dev.csv").open("a", encoding="utf-8") as fh:
@@ -171,6 +172,8 @@ def test_a5_consistent_split_passes(tmp_path: Path) -> None:
     assert r["checks"]["a5_primary_plus_quarantine_equals_b6_development"]
     assert r["checks"]["b9_groups_equal_independent_recomputation"]
     assert r["b8"]["n_quarantine"] == 1 and r["patient_groups"]["n_groups"] == 4
+    assert r["checks"]["a5_cohort_sites_match_b6_site_counts"] and r["checks"]["no_site1_in_split"]
+    assert sum(r["split"]["site_counts"]["train"].values()) == 3
 
 
 def test_a5_quarantined_case_in_groups_fails(tmp_path: Path) -> None:

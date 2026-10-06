@@ -12,41 +12,58 @@ Specification: `configs/grouping/b8_identity_clean_v1.0-A5.yaml`. Production cod
 
 ## Statements
 
-1. **v1.0-A3 failed.** Image similarity could not identify patients: verified same-patient pair B scored below the 0.999 quantile of metadata-certified different-patient pairs, and 717 of 740 cases fell into one group. A3 is withdrawn. See the administrative entry `2026-10-06_B8_A3-withdrawn-A4-dry-run.md`.
-2. **v1.0-A4 failed** and was never adopted. Metadata identity coverage is incomplete (243 of 740 development cases have none), and conservative linking of their unresolved relationships created giant groups. The largest had 374 cases, and the linking joined patients that metadata prove are different.
-3. This amendment is made **before** any split, training, validation or test evaluation.
-4. **No model result** of any kind exists or informed it.
-5. Identity uses **only** authoritative provider metadata:
-   - the crosswalk (B3);
-   - the UCSF-PDGM v5 metadata (B4);
-   - the official TCIA UCSF-PDGM follow-up rename notice.
+1. **v1.0-A3 failed** because image similarity could not reliably identify patient identity. Verified same-patient pair B scored below the 0.999 quantile of metadata-certified different-patient pairs, and 717 of 740 cases fell into one group. See `docs/research/execution/B8_A3_ACCEPTANCE_FAILURE_2026-10-06.md`.
+2. **v1.0-A4 failed** because authoritative metadata do not cover all development cases (243 of 740 have none), and conservative handling of the unresolved relationships created invalid giant groups. The largest had 374 cases and joined patients that metadata prove are different. A4 was never adopted. See `2026-10-06_B8_A3-withdrawn-A4-dry-run.md`.
+3. **The original 740-case split therefore cannot be constructed without unacceptable leakage risk:**
+   - assigning the 243 cases to singleton groups would treat the absence of identity as proof of uniqueness;
+   - linking them conservatively makes the §6.3 split impossible.
+4. **Exhaustive manual adjudication of the 49,468 flagged candidate pairs is operationally infeasible** (about 140–275 expert hours; owner decision).
+5. **The study therefore adopts an identity-clean primary development cohort.** It is the set of B6 development cases (site ≠ 1) with an authoritative provider identity, from three sources:
+   - the TCIA patient ID in its namespace, with TCGA-GBM and TCGA-LGG sharing the TCGA barcode namespace;
+   - the UCSF-PDGM v5 base patient number;
+   - the official UCSF-PDGM follow-up rename list.
 
-   It does not use image similarity, WT Dice values or thresholds, model predictions, validation or test outcomes, AURC, or any post-split information.
-6. The **primary development cohort** is the set of B6 development cases (site ≠ 1) with an authoritative identity. Its size is derived from the data and is not a parameter.
-7. Cases without authoritative identity form the **IDENTITY-UNCERTAIN QUARANTINE COHORT**. They are never grouped. They are never used in training, validation, threshold or τ_q/I derivation, calibration, model selection, the internal test, or any primary or secondary inference.
-8. **Patient groups** are the connected components of identical authoritative identity keys and the protocol's verified groups A and B. Two cases with different identity keys are never grouped, except through a verified group. Groups are frozen once at B9 and never reopened.
-9. **The estimand is unchanged** apart from its population. Unchanged:
-   - the endpoint (mean C4 within-condition ET ΔAURC, Arm B), hypotheses, metrics and conditions;
-   - the uncertainty scores, the missingness indicator, the models (Arm A/B × seeds 0–2, 250 epochs) and the statistical tests;
-   - the bootstrap (10,000, seed 12345) and the Holm family;
-   - the external cohorts (UPenn site 1; BraTS-Africa).
+   Patient groups are the connected components of identical identity keys and the verified groups A and B. The size of the cohort is derived from the evidence, not set as a parameter.
+6. **Unresolved cases are quarantined rather than falsely assigned to patient groups.** They form the IDENTITY-UNCERTAIN QUARANTINE COHORT. They are never forced into singleton groups, never linked by image similarity or proximity, and never placed in the train/validation/internal-test split.
+7. This amendment was made **before** any final split, training, test evaluation or scientific result.
+8. **No model result** influenced this amendment; none exists. Identity uses only authoritative provider metadata. Image similarity, WT Dice values or thresholds, model predictions, AURC, validation or test outcomes and post-split information are not used.
+9. **The primary estimand is the same conceptual quantity:** the within-missingness-condition ET ΔAURC of the Arm-B ensemble, U1 versus the indicator I, averaged over the C4 conditions. The following are unchanged:
+   - the research question, primary hypothesis, primary endpoint and secondary metrics;
+   - the model architecture, modality-dropout design and training configuration (Arm A/B × seeds 0–2, 250 epochs);
+   - the validation logic;
+   - the external evaluation (UPenn site 1; BraTS-Africa);
+   - the bootstrap (10,000 replicates, seed 12345) and the statistical framework, including the Holm family;
+   - the split rule (70/10/20 at patient-group level, frozen stratification, seed 20260927, created once).
+10. **The population to which the primary inference applies is now explicitly the identity-clean development cohort**, not all 740 site ≠ 1 cases.
+11. **The reduced-development-cohort limitation and possible selection bias must be reported** in the final manuscript and on every results page. The cohort is selected by the availability of identity metadata, not at random. Its site and collection composition differs from the 740-case pool (below). Internal-test precision is lower than planned.
+12. **The quarantine cohort remains outside all training, validation and primary-test decision-making.** That covers training, checkpoint selection, validation, threshold, τ_q or I derivation, calibration and primary analysis. After every primary quantity is frozen, it may be evaluated as a secondary descriptive robustness analysis under three conditions:
+    - it is labelled "IDENTITY-UNCERTAIN QUARANTINE COHORT";
+    - it reports case-level descriptive metrics only, with no patient-group bootstrap inference;
+    - it makes no claim of patient-level independence.
 
-   **The population changes:** the development and internal-test population is the identity-clean cohort, not all 740 site ≠ 1 cases. The split ratio (70/10/20, grouped) and its seed (20260927) are unchanged. The split is created once, on the primary cohort only.
-10. **Limitation (mandatory in every presentation of results):** the primary cohort is reduced and selected by the availability of identity metadata. It is not a random subsample. Its site and collection composition differs from the 740-case pool (below), so internal-test results may not generalise to the excluded contributors. Internal-test precision is lower than planned.
-11. An optional evaluation of the quarantine cohort may be reported. It must be **descriptive only**, at case level, and labelled "IDENTITY-UNCERTAIN QUARANTINE COHORT". It enters no hypothesis test, threshold or primary result.
-12. v1.0-A3 and the proposed v1.0-A4 are recorded as **failed and withdrawn / not adopted**. Their evidence is retained unchanged as an audit trail:
-    - `docs/data/records/B8_automated_*`;
-    - `docs/data/records/B8_A4_dryrun/`;
-    - `docs/research/execution/B8_A3_ACCEPTANCE_FAILURE_2026-10-06.md`.
+**Audit trail.** v1.0-A3 and the proposed v1.0-A4 are recorded as failed and withdrawn / not adopted methodological attempts. Their evidence is retained unchanged:
+- `docs/data/records/B8_automated_*`;
+- `docs/data/records/B8_A4_dryrun/`.
+
+After A5 and the split are verified, **patient grouping is frozen**. It is not reopened because of model results. No post-hoc identity rule, threshold change, image-similarity rescue or manual inspection is allowed, unless an external data-provider correction appears.
 
 ## Final metadata identity-recovery sweep (pre-split)
 
-The 243 development cases without identity were checked against every permitted authoritative source:
-- the crosswalk (all columns);
-- the UCSF-PDGM v5 metadata (every column, including `BraTS21 ID`);
-- the TCIA UCSF-PDGM rename notice.
+The record is `docs/data/records/B8_A5_identity_sweep.json`. It is reproducible with `brats-uncertainty a5-identity-sweep`; the inputs are verified against the B3/B4 hashes and the development set against the B6 hash.
 
-All 243 have TCIA patient ID `new-not-previously-in-TCIA` and no study date. No UCSF v5 row references any of them. **0 of 243 were resolved.**
+The 243 development cases without identity were checked against every official TCIA identity resource for these data. These are the only metadata files; no imaging was downloaded for this sweep.
+
+| Source | SHA-256 | Finding |
+|---|---|---|
+| `BraTS2021_MappingToTCIA.xlsx` (B3) | `223243c5…a2dc0b` | all 243: TCIA patient ID `new-not-previously-in-TCIA`, no study date |
+| `UCSF-PDGM-metadata_v5.csv` (B4; current version, 2025/05/30) | `afc1c23a…16fd78` | no row references any of the 243 (any column) |
+| TCIA UCSF-PDGM follow-up rename notice | page of 2025/05/30 | six renamed follow-ups, all of TCIA UCSF-PDGM patients; none of the 243 |
+| `NotPreviouslyInTCIA.csv` (TCIA BraTS 2021 page) | `363d410c…4f9010` | lists all 243 as "new (NIfTI) series with no TCIA DICOM equivalent"; gives no patient, study or series identifier |
+| `GC_manifest_RSNA-ASNR-MICCAI-BRATS-2021_sources.csv` (TCIA BraTS 2021 page) | `50e54e3a…c50aa2` | maps file IDs to TCIA series UIDs only; references no BraTS case, so it cannot link cases without TCIA series |
+
+The affected contributions ("Collection 1, 3, 4, 5, 7, 9" and UCSF-PDGM_Additional) have no TCIA source collection, so no further official source-collection metadata exist.
+
+**Result: 0 of 243 gain an authoritative identity.** All 243 remain unresolved; the SHA-256 of their ID list is in the sweep record. The mapping is independently reproducible from the hashed public files.
 
 ## Disclosure: pre-split composition (local dry run with the B3/B4-verified files)
 

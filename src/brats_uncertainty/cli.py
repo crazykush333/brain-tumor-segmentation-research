@@ -323,6 +323,28 @@ def _cmd_b8_a4_dryrun(root: Path, args: argparse.Namespace) -> int:
     return 0 if r["accepted"] else 1
 
 
+def _cmd_a5_identity_sweep(root: Path, args: argparse.Namespace) -> int:
+    import json as _json
+
+    from brats_uncertainty.verification.identity_sweep import run
+
+    r = run(
+        root,
+        Path(args.crosswalk),
+        Path(args.ucsf_metadata),
+        Path(args.not_previously_in_tcia),
+        Path(args.gc_manifest),
+    )
+    out = root / args.out
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(_json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        f"checked {r['n_checked_without_identity']}; newly resolved {r['n_newly_resolved']}; "
+        f"remaining unresolved {r['n_remaining_unresolved']}"
+    )
+    return 0
+
+
 def _cmd_audit_split(root: Path, args: argparse.Namespace) -> int:
     import json as _json
 
@@ -659,6 +681,17 @@ def build_parser() -> argparse.ArgumentParser:
     a4.add_argument("--ucsf-metadata", required=True, help="UCSF-PDGM-metadata_v5.csv (B4 hash)")
     a4.add_argument("--out", default="docs/data/records/B8_A4_dryrun")
     a4.set_defaults(func=_cmd_b8_a4_dryrun)
+    sw = sub.add_parser(
+        "a5-identity-sweep", help="final A5 metadata identity-recovery sweep (no gate change)"
+    )
+    sw.add_argument("--crosswalk", required=True, help="BraTS2021_MappingToTCIA.xlsx (B3 hash)")
+    sw.add_argument("--ucsf-metadata", required=True, help="UCSF-PDGM-metadata_v5.csv (B4 hash)")
+    sw.add_argument("--not-previously-in-tcia", required=True, help="NotPreviouslyInTCIA.csv")
+    sw.add_argument(
+        "--gc-manifest", required=True, help="GC_manifest_RSNA-ASNR-MICCAI-BRATS-2021_sources.csv"
+    )
+    sw.add_argument("--out", default="docs/data/records/B8_A5_identity_sweep.json")
+    sw.set_defaults(func=_cmd_a5_identity_sweep)
     au = sub.add_parser(
         "audit-split", help="independent B8-B12 leakage/provenance audit (committed IDs only)"
     )

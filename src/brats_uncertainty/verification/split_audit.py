@@ -252,6 +252,23 @@ def _audit_with_groups(
     groups_per_part = {
         p: len({case_group.get(c) for c in ids}) for p, ids in sorted(by_part.items())
     }
+    # site membership (A5 cohort record), reconciled with the B6 per-site counts
+    sites_per_part: dict[str, dict[str, int]] = {}
+    cohort_csv = repo / "docs/data/records/B8_A5/cohort.csv"
+    if cohort_csv.is_file():
+        cohort = _rows(cohort_csv)
+        site_of = {r["case_id"]: r["site"] for r in cohort}
+        b6 = json.loads((repo / "docs/data/records/B6.json").read_text("utf-8"))
+        if "site_counts" in b6:
+            expected = {s: n for s, n in b6["site_counts"].items() if s != "1"}
+            checks["a5_cohort_sites_match_b6_site_counts"] = (
+                dict(Counter(r["site"] for r in cohort)) == expected
+            )
+        checks["no_site1_in_split"] = all(site_of.get(c) not in (None, "1") for c in part)
+        sites_per_part = {
+            p: dict(sorted(Counter(site_of.get(c, "?") for c in ids).items()))
+            for p, ids in sorted(by_part.items())
+        }
     return {
         "passed": all(checks.values()),
         "checks": checks,
@@ -266,6 +283,7 @@ def _audit_with_groups(
             "seed": summary.get("seed"),
             "case_counts": {p: len(ids) for p, ids in sorted(by_part.items())},
             "group_counts": groups_per_part,
+            "site_counts": sites_per_part,
             "split_all_csv_sha256": hashes["split_all_csv_sha256"],
         },
         "crossing_groups": crossing,
@@ -298,6 +316,7 @@ def render_report(result: dict[str, Any]) -> str:
         f"- split seed: {sp['seed']}",
         f"- cases per partition: {sp['case_counts']}",
         f"- groups per partition: {sp['group_counts']}",
+        f"- sites per partition: {sp.get('site_counts') or 'not recorded'}",
         f"- split_all.csv SHA-256: `{sp['split_all_csv_sha256']}`",
         f"- groups crossing partitions: {len(result['crossing_groups'])}",
         "",

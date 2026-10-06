@@ -1,0 +1,12 @@
+{
+  "amendment": "docs/research/protocol-amendments/2026-10-06_B8_A5_identity-clean-cohort.md",
+  "cohort_file": "docs/data/records/B8_A5/cohort.csv",
+  "gate": "B8",
+  "independent_verification": "VERIFIED",
+  "n_patient_groups": 495,
+  "n_primary": 497,
+  "n_quarantine": 243,
+  "procedure": "identity_clean_v1.0-A5",
+  "recorded_at": "2026-10-06T13:58:43+00:00",
+  "summary": "docs/data/records/B8_A5/summary.json"
+}

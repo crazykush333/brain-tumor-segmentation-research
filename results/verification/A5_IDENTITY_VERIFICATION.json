@@ -1,0 +1,22 @@
+{
+  "checks": {
+    "groups_identical": true,
+    "primary_identical": true,
+    "quarantine_identical": true
+  },
+  "gate": "B8",
+  "n_groups": [
+    495,
+    495
+  ],
+  "n_primary": [
+    497,
+    497
+  ],
+  "n_quarantine": [
+    243,
+    243
+  ],
+  "procedure": "identity_clean_v1.0-A5",
+  "status": "VERIFIED"
+}

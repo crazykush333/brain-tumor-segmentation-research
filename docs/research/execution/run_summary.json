@@ -27,10 +27,10 @@
     "D3": "CLOSED",
     "D4": "CLOSED",
     "D5": "CLOSED",
-    "D6": "NOT_STARTED"
+    "D6": "CLOSED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "048744ae3b992937800d68200009115ecf8d9142",
+  "git_commit": "0a5ec6184336dcf4f38174c520ec7f16133f8b98",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -154,24 +154,24 @@
       "summary": "gate D2 closed (project status)"
     },
     "D3": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "D3 CLOSED: pilot restricted to site != 1 development cases"
+      "summary": "gate D3 closed (project status)"
     },
     "D4": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "D4 CLOSED: no label-based scientific metrics"
+      "summary": "gate D4 closed (project status)"
     },
     "D5": {
-      "attempts": 1,
+      "attempts": 0,
       "status": "PASSED",
-      "summary": "D5 CLOSED: no site-1 or BraTS-Africa data"
+      "summary": "gate D5 closed (project status)"
     },
     "D6": {
       "attempts": 1,
-      "status": "REVIEW_REQUIRED",
-      "summary": "D6: EXP-001 acceptance needs the owner: ['resume check did not pass', 'p100_epoch_time_s: not measurable on this platform', 'concurrent_2gpu_epoch_time_s: not measurable on this platform', 'quota_h_week: not measurable on this platform', 'session_limit_h: not measurable on this platform', \"SR1/SR6 reached 'consult the owner'\"]"
+      "status": "PASSED",
+      "summary": "D6 CLOSED: SR1/SR6/SR8 applied before main training"
     },
     "DATA": {
       "attempts": 1,
@@ -206,7 +206,7 @@
     "PILOT": {
       "attempts": 1,
       "status": "PASSED",
-      "summary": "EXP-001 measurements recorded"
+      "summary": "EXP-001 R1 re-run: resume_pass=True"
     },
     "STATISTICS": {
       "attempts": 0,
@@ -214,34 +214,34 @@
       "summary": ""
     },
     "TRAIN-A0": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-02: run FAILED after attempt 1"
     },
     "TRAIN-A1": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-03: run FAILED after attempt 1"
     },
     "TRAIN-A2": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-04: run FAILED after attempt 1"
     },
     "TRAIN-B0": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-05: run FAILED after attempt 1"
     },
     "TRAIN-B1": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-06: run FAILED after attempt 1"
     },
     "TRAIN-B2": {
-      "attempts": 0,
-      "status": "LOCKED",
-      "summary": ""
+      "attempts": 1,
+      "status": "BLOCKED",
+      "summary": "JOB-07: run FAILED after attempt 1"
     },
     "VALIDATION": {
       "attempts": 0,

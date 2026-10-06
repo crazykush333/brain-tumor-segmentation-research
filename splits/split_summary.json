@@ -1,0 +1,59 @@
+{
+  "counts": {
+    "internal_test": {
+      "cases": 100,
+      "groups": 99
+    },
+    "train": {
+      "cases": 347,
+      "groups": 346
+    },
+    "validation": {
+      "cases": 50,
+      "groups": 50
+    }
+  },
+  "seed": 20260927,
+  "sha256": {
+    "all": "393726596f1f34011d14f3e0e2daf543f09a7ee36501e687a6bddd6cd0d60005",
+    "internal_test": "e81d0c3d494888f9e41b99da17cc9c7b2fb5f312fa5bc0c8f7a5c5ef16500236",
+    "train": "66291781f1a6dd903cdbe1ffabbafa8ef7ae53cc8fe1762b3181b23ffc8947c0",
+    "validation": "3c1c506f2147bd59cf25e365ce0097415bb42a0d1da8bd498a04618cc11da3cd"
+  },
+  "strata_counts": {
+    "et0_t0": {
+      "internal_test": 1,
+      "train": 5,
+      "validation": 1
+    },
+    "et0_t1": {
+      "internal_test": 1,
+      "train": 3,
+      "validation": 0
+    },
+    "et0_t2": {
+      "internal_test": 2,
+      "train": 6,
+      "validation": 1
+    },
+    "et1_t0": {
+      "internal_test": 32,
+      "train": 110,
+      "validation": 16
+    },
+    "et1_t1": {
+      "internal_test": 32,
+      "train": 113,
+      "validation": 16
+    },
+    "et1_t2": {
+      "internal_test": 31,
+      "train": 109,
+      "validation": 16
+    }
+  },
+  "tertile_cuts_ml": [
+    74.3,
+    125.387
+  ]
+}

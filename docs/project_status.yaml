@@ -102,7 +102,7 @@ gates:
   - {id: B9, title: "Patient groups frozen and committed (IDs only)", status: PASSED, evidence: "splits/patient_groups_dev.csv", closed_on: "2026-10-06"}
   - {id: B10, title: "Final split created once", status: PASSED, evidence: "splits/split_all.csv", closed_on: "2026-10-06"}
   - {id: B11, title: "Split assertions pass", status: PASSED, evidence: "splits/split_summary.json", closed_on: "2026-10-06"}
-  - {id: B12, title: "Split hashes recorded", status: RUNNING, evidence: null, closed_on: null}
+  - {id: B12, title: "Split hashes recorded", status: PASSED, evidence: "splits/split_hashes.json", closed_on: "2026-10-06"}
   # --- C: pre-external-evaluation gates -----------------------------------------
   - {id: C1, title: "BraTS-Africa file-level label verification", status: NOT_STARTED, evidence: null, closed_on: null}
   - {id: C2, title: "BraTS-Africa four-sequence verification", status: NOT_STARTED, evidence: null, closed_on: null}

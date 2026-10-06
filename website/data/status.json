@@ -170,10 +170,10 @@
       "title": "Split assertions pass"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "B",
       "id": "B12",
-      "status": "RUNNING",
+      "status": "PASSED",
       "title": "Split hashes recorded"
     },
     {
@@ -351,7 +351,7 @@
       "detail": "split hashes recorded",
       "key": "b12",
       "label": "B12 Split hashes",
-      "status": "RUNNING"
+      "status": "PASSED"
     },
     {
       "detail": "arms A/B x seeds 0-2",

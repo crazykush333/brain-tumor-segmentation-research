@@ -233,10 +233,10 @@
       "title": "Approved data route (B1)"
     },
     {
-      "closed_on": null,
+      "closed_on": "2026-10-06",
       "group": "D",
       "id": "D3",
-      "status": "NOT_STARTED",
+      "status": "CLOSED",
       "title": "Pilot restricted to site != 1 development cases"
     },
     {

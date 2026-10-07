@@ -30,7 +30,7 @@
     "D6": "CLOSED"
   },
   "generated_from": "master runner state + docs/project_status.yaml (no hand-typed values)",
-  "git_commit": "2bde7a9fd699e15d37043448cbc984681738babd",
+  "git_commit": "7b290a045a9f811f6e1a195bb421670bb01e2682",
   "git_dirty": false,
   "protocol": {
     "sha256": "704c0b495917344f44b93e7548ade0e32a71220265419516a2c83d626fcd9811",
@@ -216,7 +216,7 @@
     "TRAIN-A0": {
       "attempts": 1,
       "status": "BLOCKED",
-      "summary": "JOB-02: an earlier session ran this job (status FAILED) but its run directory was not restored in this session"
+      "summary": "JOB-02: paused at this session's time budget (checkpoint Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth, saved to session output)"
     },
     "TRAIN-A1": {
       "attempts": 1,

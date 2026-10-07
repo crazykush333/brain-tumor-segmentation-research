@@ -590,3 +590,30 @@ def test_final_audit_verdict_requires_full_verification() -> None:
     )
     verified = {"overall": "VERIFIED", "scientific_status": "VERIFIED"}
     assert final_status(True, verified) == "REAL RESULTS VERIFIED"
+
+
+def test_verified_internal_results_never_claim_external_evaluation(
+    study: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verified internal results with external prerequisites still blocked: the external
+    section stays NOT_STARTED and the public statement says the external evaluation is
+    pending (no external result is implied)."""
+    from brats_uncertainty.orchestration import study_steps as ss
+    from brats_uncertainty.verification.run import save_result
+    from tests.unit.test_orchestration import FakeOps, make_ctx
+
+    ctx = make_ctx(tmp_path, FakeOps())
+    save_result(study["result"], ctx.work_dir / "verification/verification_result.json")
+    dest = ctx.repo_root / "results/public-safe/analysis"
+    dest.mkdir(parents=True)
+    (dest / "internal_test_analysis.json").write_text("{}", encoding="utf-8")  # internal only
+    changes: list[dict[Any, Any]] = []
+    monkeypatch.setattr(ss, "_set_status", lambda _ctx, upd, **k: changes.append(upd))
+    ss.execute_verify(ctx)
+    merged = {k: v for c in changes for k, v in c.items()}
+    assert merged[("evaluation", "internal")] == "COMPLETED"
+    assert merged[("evaluation", "external")] == "NOT_STARTED"
+    assert (
+        "External evaluation pending for: brats_africa, upenn_hoi"
+        in merged[("results", "statement")]
+    )

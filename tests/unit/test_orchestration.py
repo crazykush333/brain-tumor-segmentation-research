@@ -765,3 +765,13 @@ def test_push_replays_milestones_when_the_remote_moved(tmp_path: Path) -> None:
     assert git(seed, "ls-remote", "origin", "refs/heads/main").split()[0] == head
     log = git(session, "log", "--format=%s", "-3").splitlines()
     assert log == ["data(MAIN): run manifest", "fix", "initial"]  # replayed, not forced
+
+
+def test_internal_results_never_wait_for_external_data() -> None:
+    """Blocked external prerequisites (C1 BraTS-Africa, C4 UPenn) must not hold back the
+    internal primary analysis, its verification or the website."""
+    from brats_uncertainty.orchestration.steps import build_steps
+
+    steps = {s.id: s for s in build_steps()}
+    assert steps["STATISTICS"].needs == ("INTERNAL_TEST",)
+    assert steps["VERIFY"].needs == ("STATISTICS",)

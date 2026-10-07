@@ -904,16 +904,34 @@ def execute_verify(ctx: Context) -> Outcome:
         {"artifacts": [ctx.rel(a) for a in arts]},
         overwrite=True,
     )
-    for section in ("internal", "external"):
-        _set_status(ctx, {("evaluation", section): "COMPLETED"})
+    external = sorted(
+        ds
+        for ds in ("upenn_hoi", "brats_africa")
+        if (dest / "analysis" / f"{ds}_analysis.json").is_file()
+    )
+    _set_status(ctx, {("evaluation", "internal"): "COMPLETED"})
+    # never imply an external evaluation that has not been carried out
+    _set_status(
+        ctx, {("evaluation", "external"): "COMPLETED" if len(external) == 2 else "NOT_STARTED"}
+    )
+    pending = sorted({"upenn_hoi", "brats_africa"} - set(external))
+    statement = (
+        "Independently verified results of the pre-registered analyses "
+        "(results/verification/RESULT_VERIFICATION_CERTIFICATE.md)."
+    )
+    if pending:
+        statement += (
+            " External evaluation pending for: "
+            + ", ".join(pending)
+            + " (its prerequisites are not complete); no external result exists for it."
+        )
     _set_status(
         ctx,
         {
             ("results", "status"): "AVAILABLE",
             ("results", "available"): True,
             ("results", "evidence"): "results/index.json",
-            ("results", "statement"): "Independently verified results of the pre-registered "
-            "analyses (results/verification/RESULT_VERIFICATION_CERTIFICATE.md).",
+            ("results", "statement"): statement,
         },
     )
     return Outcome(PASSED, "scientific results independently VERIFIED (publication checks follow)")

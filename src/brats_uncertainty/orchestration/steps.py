@@ -1826,7 +1826,9 @@ def build_steps() -> list[Step]:
             "STATISTICS",
             "Pre-registered analyses, figures, tables (private; awaiting verification)",
             "report",
-            ("INTERNAL_TEST", "EXTERNAL_HOI", "EXTERNAL_AFRICA"),
+            # the internal (primary) analysis never waits for external data: external units
+            # are included when present, and families needing them stay incomplete otherwise
+            ("INTERNAL_TEST",),
             ss.execute_statistics,
         ),
         Step(

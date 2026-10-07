@@ -1,6 +1,19 @@
 {
+  "a5_amendment": {
+    "path": "docs/research/protocol-amendments/2026-10-06_B8_A5_identity-clean-cohort.md",
+    "sha256": "4f6d775ec85af1395ccd434a46416436eb58c3f5a0011ef2a9ecf3b293626141"
+  },
+  "a5_cohort": {
+    "path": "docs/data/records/B8_A5/cohort.csv",
+    "sha256": "66d0fdac40ecce914bd86bf2570d4bda1f693abe939829e6086592e3223629e2"
+  },
   "arm": "A",
-  "artifact_paths": [],
+  "artifact_paths": [
+    "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth",
+    "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/debug.json",
+    "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/progress.png",
+    "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/training_log_2026_10_6_22_06_23.txt"
+  ],
   "attempts": [
     {
       "action": "start",
@@ -32,10 +45,93 @@
       "reason": "new run",
       "resumed_from": null,
       "started_at": "2026-10-06T19:45:11.998337+00:00"
+    },
+    {
+      "action": "restart",
+      "checkpoint_out": {
+        "path": "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth",
+        "sha256": "fb2f91666af5efa184da119d1b1d9f75795aefa88d7405450c20707bbf1381d5"
+      },
+      "checkpoint_out_inspection": {
+        "checkpoint_epoch": 175,
+        "expected_resume_lr": 0.0033838346190164987,
+        "grad_scaler_state": true,
+        "logged_epochs": 175,
+        "optimizer_param_groups": 1,
+        "optimizer_state_entries": 108,
+        "passed": true,
+        "problems": [],
+        "trainer": "nnUNetTrainer_BratsUnc_250ep"
+      },
+      "command": [
+        "nnUNetv2_train",
+        "501",
+        "3d_fullres",
+        "0",
+        "-tr",
+        "nnUNetTrainer_BratsUnc_250ep"
+      ],
+      "ended_at": "2026-10-07T08:13:37.694578+00:00",
+      "environment": "kaggle",
+      "environment_hash": "683e266d660af3df6e706fe633a1a8422a030603835e0b7a1c9d3e95aac288b1",
+      "exit_code": -15,
+      "git_commit": "84429d9853665b115fb5cefa81257ec18b5c81b6",
+      "gpu": {
+        "gpu": [
+          "Tesla T4"
+        ],
+        "mem_peak_gb": 6.83,
+        "samples": 1215,
+        "util_busy_fraction": 0.91,
+        "util_mean_pct": 84.9
+      },
+      "gpu_hours": 10.1251,
+      "hardware": {
+        "cpu_count": 4,
+        "cuda": "12.8",
+        "environment": "kaggle",
+        "gpu": "Tesla T4",
+        "nnunetv2": "2.8.1",
+        "numpy": "2.1.3",
+        "os": "Linux-6.18.48+-x86_64-with-glibc2.39",
+        "python": "3.13.15",
+        "ram_total_bytes": 33658318848,
+        "torch": "2.11.0+cu128",
+        "vram_bytes": 15636037632
+      },
+      "lineage": "arm_a_seed_0 -> session 2 (2026-10-06T22:06:07.357820+00:00) -> Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth -> sha256 fb2f91666af5efa184da119d1b1d9f75795aefa88d7405450c20707bbf1381d5 -> epoch 175 -> next expected epoch 175",
+      "reason": "earlier attempt left no checkpoint; explicit restart",
+      "resume_verification": null,
+      "resumed_from": null,
+      "resumed_from_checkpoint": null,
+      "session": 2,
+      "started_at": "2026-10-06T22:06:07.357820+00:00",
+      "training_log": {
+        "devices": [],
+        "epochs_finished": 175,
+        "epochs_started": 176,
+        "first_epoch_started": 0,
+        "first_train_loss": -0.4257,
+        "last_epoch_started": 175,
+        "last_logged_lr": 0.00338,
+        "last_train_loss": -0.8796,
+        "logs": [
+          {
+            "file": "training_log_2026_10_6_22_06_23.txt",
+            "sha256": "a758ea34453765c376194e84705e49b94e0c1139d3296b18c37a9c02d00e8d86"
+          }
+        ],
+        "median_epoch_s": 204.39,
+        "train_loss_lines": 175,
+        "trained": true
+      }
     }
   ],
-  "checkpoint": null,
-  "checkpoint_path": null,
+  "checkpoint": {
+    "path": "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth",
+    "sha256": "fb2f91666af5efa184da119d1b1d9f75795aefa88d7405450c20707bbf1381d5"
+  },
+  "checkpoint_path": "Dataset501_BraTS2021Dev/nnUNetTrainer_BratsUnc_250ep__nnUNetPlans__3d_fullres/fold_0/checkpoint_latest.pth",
   "config_sha256": {
     "configs/compute/remote_compute.yaml": "7bf17ef2ea2c5988cd8c0764726cd0f9377d9584dd4dcf7b329669c0ad56db94",
     "configs/experiments/main_training.yaml": "cc948371284dd486e83ea0caace4e31ec82839df685dabed2e1ac152e9732819",
@@ -46,10 +142,12 @@
   "data_class": "REAL_RESEARCH_DATA",
   "dataset_conversion_sha256": "f004c1b360fd2a334c70c8999edb305bccb57c41b194df20f0f085bdfc5288d5",
   "dataset_manifest_sha256": "1eaabd56793e6a5dbe0a52b58b150cb17340918b851dd9831227392701cb967e",
-  "end_time": "2026-10-06T19:45:41.999861+00:00",
+  "end_time": "2026-10-07T08:13:37.694578+00:00",
   "environment_hash": "683e266d660af3df6e706fe633a1a8422a030603835e0b7a1c9d3e95aac288b1",
+  "epochs_planned": 250,
   "experiment_id": "MAIN",
-  "git_commit": "deae8f275710ef5c9b45305b965d8a73c6a7df71",
+  "git_commit": "84429d9853665b115fb5cefa81257ec18b5c81b6",
+  "gpu_hours_total": 10.1251,
   "hardware": {
     "cpu_count": 4,
     "cuda": "12.8",

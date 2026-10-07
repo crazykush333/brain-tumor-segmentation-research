@@ -79,16 +79,22 @@ Implemented and tested:
 - research-gate guards, the evaluation ledger, experiment lifecycle and result artifacts
 - the website export and the repository scan
 
+Implemented since the first draft of this list, with direct controlled-input tests
+(`tests/unit/test_evaluator_audit.py`, `tests/unit/test_study_pipeline.py`):
+- S6 Spearman helper; S10 C15 block; S12 pooled/lexicographic rankers and S13 mixtures;
+  S14 indicator transfer error; the supporting B-vs-A Dice analysis; §19 failure
+  categorization
+- the inference driver around `nnUNetPredictor` (`study/nnunet_inference.py`)
+- the nnU-Net trainer glue, verified against nnunetv2 2.8.1 (the version installed on the
+  measured platform): constructor signature (regression test), and an arm-B epoch trained
+  locally on SYNTHETIC data
+- AURC tie handling checked against brute-force enumeration of all tie orders; Dice and
+  U1 conventions checked against an independent formula (evaluator audit, 2026-10-07)
+
 Pending (must be implemented and tested before `eval-v1`):
-- HD95 wrapper (C6)
-- S6 Spearman helper
-- S10 C15 driver
-- S12 pooled/lexicographic analysis and S13 mixture weights
-- S14 indicator transfer error
-- the supporting B-vs-A Dice analysis
-- §19 failure categorization
-- the end-to-end inference driver around `nnUNetPredictor`
-- the nnU-Net trainer glue, which must be verified against the version pinned at M1/EXP-001
+- HD95 wrapper (C6): wraps the BraTS evaluator the owner pins at C6
+  (`configs/evaluation/evaluation.yaml` `hd95.evaluator`); its empty-mask behaviour is
+  verified by a test before the tag
 
 ## 6. Verifying a checkout
 
